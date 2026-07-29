@@ -451,22 +451,45 @@ function renderAlumnos(){
   });
 }
  
+function getStatsPartidosJugador(nombre){
+  let partidosConvocado = 0, partidosJugados = 0, goles = 0, asistencias = 0;
+  (STATE.eventos || []).forEach(ev => {
+    if (ev.tipo !== 'Partido' || !ev.convocatoria) return;
+    const j = ev.convocatoria.jugadores.find(x => (typeof x === 'string' ? x : x.nombre) === nombre);
+    if (!j) return;
+    partidosConvocado++;
+    if (typeof j !== 'string'){
+      if (j.jugo) partidosJugados++;
+      goles += Number(j.goles) || 0;
+      asistencias += Number(j.asistencias) || 0;
+    }
+  });
+  return { partidosConvocado, partidosJugados, goles, asistencias };
+}
+ 
 function abrirFichaTecnica(rowIndex){
   const p = STATE.players.find(pl=>pl.rowIndex===rowIndex);
   if (!p) return;
   const pct = attendancePctLocal(p);
   const foto = STATE.photos && STATE.photos[p.nombre];
+  const st = getStatsPartidosJugador(p.nombre);
   document.getElementById('fichaTecnicaBody').innerHTML = `
     <div style="text-align:center; margin-bottom:16px;">
       <div style="width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--pitch-line); margin:0 auto 10px;">${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover;" alt="">`:''}</div>
       <h2 style="margin:0; font-size:18px;">#${p.numero||'--'} ${p.nombre}</h2>
       <div style="color:var(--chalk-dim); font-size:12.5px;">${p.posicion||'—'} · Nacido ${p.anioNacimiento||'—'}</div>
     </div>
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <div style="flex:1; text-align:center; background:var(--pitch-dark); border-radius:8px; padding:10px;"><div style="font-size:20px; font-weight:700; color:var(--accent);">${st.goles}</div><div style="font-size:10.5px; color:var(--chalk-dim); text-transform:uppercase;">Goles</div></div>
+      <div style="flex:1; text-align:center; background:var(--pitch-dark); border-radius:8px; padding:10px;"><div style="font-size:20px; font-weight:700; color:var(--accent);">${st.asistencias}</div><div style="font-size:10.5px; color:var(--chalk-dim); text-transform:uppercase;">Asistencias</div></div>
+      <div style="flex:1; text-align:center; background:var(--pitch-dark); border-radius:8px; padding:10px;"><div style="font-size:20px; font-weight:700; color:var(--chalk);">${st.partidosJugados}</div><div style="font-size:10.5px; color:var(--chalk-dim); text-transform:uppercase;">Jugados</div></div>
+    </div>
     <div style="font-size:13px; line-height:2;">
       <div><b>Teléfono jugador:</b> ${p.telJugador||'—'}</div>
       <div><b>Tutor:</b> ${p.nombreTutor||'—'} ${p.telTutor?'('+p.telTutor+')':''}</div>
       <div><b>Equipo:</b> ${p.equipo||'—'}</div>
-      <div><b>Asistencia:</b> ${pct!==null ? pct+'%' : 'Sin registros'}</div>
+      <div><b>Asistencia a entrenamientos:</b> ${pct!==null ? pct+'%' : 'Sin registros'}</div>
+      <div><b>Partidos convocado:</b> ${st.partidosConvocado}</div>
     </div>`;
   document.getElementById('fichaOverlay').style.display = 'flex';
 }
@@ -569,8 +592,8 @@ document.getElementById('partidoSelect').addEventListener('change', () => {
   document.getElementById('formacionEditor').style.display = 'block';
   pfStats = {};
   (partidoActual.convocatoria ? partidoActual.convocatoria.jugadores : []).forEach(j=>{
-    if (typeof j === 'string') pfStats[j] = { convocado:true, asistio:false, jugo:false, goles:0 };
-    else pfStats[j.nombre] = { convocado:true, asistio: !!j.asistio, jugo: !!j.jugo, goles: Number(j.goles)||0 };
+    if (typeof j === 'string') pfStats[j] = { convocado:true, asistio:false, jugo:false, goles:0, asistencias:0 };
+    else pfStats[j.nombre] = { convocado:true, asistio: !!j.asistio, jugo: !!j.jugo, goles: Number(j.goles)||0, asistencias: Number(j.asistencias)||0 };
   });
   formacionActual = partidoActual.formacion ? {...partidoActual.formacion.asignaciones} : {};
   document.getElementById('formacionSelect').value = (partidoActual.formacion && FORMATIONS[partidoActual.formacion.formacion]) ? partidoActual.formacion.formacion : '4-3-3';
@@ -578,7 +601,7 @@ document.getElementById('partidoSelect').addEventListener('change', () => {
   buildPitch();
 });
  
-let pfStats = {}; // { nombre: { convocado, asistio, jugo, goles } }
+let pfStats = {}; // { nombre: { convocado, asistio, jugo, goles, asistencias } }
  
 function renderConvocatoriaProfe(){
   const el = document.getElementById('pfConvocatoriaList');
@@ -590,7 +613,7 @@ function renderConvocatoriaProfe(){
   </div>`;
  
   const rows = alumnos.map(p => {
-    const st = pfStats[p.nombre] || { convocado:false, asistio:false, jugo:false, goles:0 };
+    const st = pfStats[p.nombre] || { convocado:false, asistio:false, jugo:false, goles:0, asistencias:0 };
     const nombreAttr = p.nombre.replace(/"/g,'&quot;');
     return `
     <div class="convocado-row ${st.convocado?'is-on':''}" data-rowfor="${nombreAttr}">
@@ -602,6 +625,7 @@ function renderConvocatoriaProfe(){
         <label><input type="checkbox" data-asistio="${nombreAttr}" ${st.asistio?'checked':''}> Asistió</label>
         <label><input type="checkbox" data-jugo="${nombreAttr}" ${st.jugo?'checked':''}> Jugó</label>
         <label>Goles <input type="number" min="0" data-goles="${nombreAttr}" value="${st.goles||0}"></label>
+        <label>Asist. <input type="number" min="0" data-asistencias="${nombreAttr}" value="${st.asistencias||0}"></label>
       </div>
     </div>`;
   }).join('');
@@ -609,14 +633,14 @@ function renderConvocatoriaProfe(){
   el.innerHTML = toolbar + rows;
  
   document.getElementById('convocarTodosProfeBtn').onclick = () => {
-    alumnos.forEach(p=>{ if (!pfStats[p.nombre]) pfStats[p.nombre] = { convocado:true, asistio:false, jugo:false, goles:0 }; else pfStats[p.nombre].convocado = true; });
+    alumnos.forEach(p=>{ if (!pfStats[p.nombre]) pfStats[p.nombre] = { convocado:true, asistio:false, jugo:false, goles:0, asistencias:0 }; else pfStats[p.nombre].convocado = true; });
     renderConvocatoriaProfe();
     buildPitch();
   };
   el.querySelectorAll('[data-conv]').forEach(cb=>{
     cb.onchange = () => {
       const nombre = cb.dataset.conv;
-      if (!pfStats[nombre]) pfStats[nombre] = { convocado:false, asistio:false, jugo:false, goles:0 };
+      if (!pfStats[nombre]) pfStats[nombre] = { convocado:false, asistio:false, jugo:false, goles:0, asistencias:0 };
       pfStats[nombre].convocado = cb.checked;
       const row = el.querySelector(`[data-rowfor="${nombre.replace(/"/g,'\\"')}"]`);
       row.classList.toggle('is-on', cb.checked);
@@ -628,6 +652,7 @@ function renderConvocatoriaProfe(){
   el.querySelectorAll('[data-asistio]').forEach(cb=>{ cb.onchange = () => { pfStats[cb.dataset.asistio].asistio = cb.checked; }; });
   el.querySelectorAll('[data-jugo]').forEach(cb=>{ cb.onchange = () => { pfStats[cb.dataset.jugo].jugo = cb.checked; }; });
   el.querySelectorAll('[data-goles]').forEach(inp=>{ inp.onchange = () => { pfStats[inp.dataset.goles].goles = Number(inp.value)||0; }; });
+  el.querySelectorAll('[data-asistencias]').forEach(inp=>{ inp.onchange = () => { pfStats[inp.dataset.asistencias].asistencias = Number(inp.value)||0; }; });
   document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' convocados';
 }
  
@@ -666,7 +691,7 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
   const formKey = document.getElementById('formacionSelect').value;
   const asignaciones = {};
   document.querySelectorAll('#pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
-  const jugadores = Object.keys(pfStats).filter(n=>pfStats[n].convocado).map(n=>({ nombre:n, asistio: pfStats[n].asistio, jugo: pfStats[n].jugo, goles: pfStats[n].goles }));
+  const jugadores = Object.keys(pfStats).filter(n=>pfStats[n].convocado).map(n=>({ nombre:n, asistio: pfStats[n].asistio, jugo: pfStats[n].jugo, goles: pfStats[n].goles, asistencias: pfStats[n].asistencias }));
   msg.textContent = 'Guardando...'; msg.className = 'msg';
   try{
     await fetch(API_URL, {
@@ -687,4 +712,3 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
 </script>
 </body>
 </html>
- 
