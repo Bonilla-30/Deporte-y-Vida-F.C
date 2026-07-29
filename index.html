@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -261,6 +260,14 @@
   .toggle button.on-absent{background:var(--red); color:var(--pitch-dark);}
   .pct-bar-wrap{width:70px; height:6px; background:var(--card); border-radius:4px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px;}
   .pct-bar{height:100%; background:var(--accent);}
+ 
+  .field-line{display:flex; justify-content:space-around; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+  .field-line:last-child{margin-bottom:0;}
+  .slot{display:flex; flex-direction:column; align-items:center; gap:4px; min-width:76px;}
+  .slot label{font-size:9.5px; color:rgba(255,255,255,0.6); text-transform:uppercase;}
+  .slot select{width:100%; font-size:11px; padding:6px 4px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.25); color:#fff; border-radius:6px;}
+  .convocado-check{display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px;}
+  .convocado-check input{width:16px; height:16px; accent-color:var(--accent);}
  
   .loading, .err{padding:40px; text-align:center; color:var(--chalk-dim);}
   .err{color:var(--red);}
@@ -528,6 +535,38 @@
     <div class="modal-actions">
       <span class="save-msg" id="eventoSaveMsg"></span>
       <button class="btn btn-primary" id="saveEventoBtn" style="margin-left:auto;">Crear y avisar</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- FICHA DEL PARTIDO -->
+<div class="overlay" id="fichaPartidoOverlay">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-head">
+      <h3 id="fichaPartidoTitle">Ficha del partido</h3>
+      <button class="close-x" id="closeFichaPartido">&times;</button>
+    </div>
+ 
+    <div class="section-label">Convocatoria (jugadores citados)</div>
+    <div style="max-height:220px; overflow-y:auto; border:1px solid var(--pitch-line); border-radius:8px; padding:10px; margin-bottom:8px;" id="convocatoriaList"></div>
+    <div style="font-size:12px; color:var(--chalk-dim); margin-bottom:16px;" id="convocatoriaCount"></div>
+ 
+    <div class="section-label">Alineación</div>
+    <div class="field" style="max-width:220px; margin-bottom:14px;">
+      <label>Esquema</label>
+      <select id="fp_formacionSelect">
+        <option value="4-3-3">4-3-3</option>
+        <option value="4-4-2">4-4-2</option>
+        <option value="3-5-2">3-5-2</option>
+        <option value="3-4-3">3-4-3</option>
+        <option value="5-3-2">5-3-2</option>
+      </select>
+    </div>
+    <div class="field-pitch" id="fp_pitchContainer" style="background:linear-gradient(180deg,#1a5c34,#143f26); border-radius:12px; padding:18px 10px; border:2px solid rgba(255,255,255,0.15);"></div>
+ 
+    <div class="modal-actions">
+      <span class="save-msg" id="fichaPartidoMsg"></span>
+      <button class="btn btn-primary" id="guardarFichaPartidoBtn" style="margin-left:auto;">Guardar</button>
     </div>
   </div>
 </div>
@@ -1554,8 +1593,11 @@ function renderEventos(){
   const proximos = eventos.filter(ev=>ev.fecha >= today);
   const pasados = eventos.filter(ev=>ev.fecha < today);
  
-  const cardHtmlEv = (ev) => `
-    <div class="pcard" data-row="${ev.rowIndex}" style="cursor:default;">
+  const cardHtmlEv = (ev) => {
+    const esPartido = ev.tipo === 'Partido';
+    const convN = ev.convocatoria ? ev.convocatoria.jugadores.length : 0;
+    return `
+    <div class="pcard" data-row="${ev.rowIndex}" style="${esPartido ? 'cursor:pointer;' : 'cursor:default;'}">
       <div class="pcard-top">
         <span style="font-size:20px;">${TIPO_ICONO[ev.tipo] || '📌'}</span>
         <span class="pos-badge" style="background:transparent; border:1px solid ${TIPO_COLOR[ev.tipo]||'var(--pitch-line)'}; color:${TIPO_COLOR[ev.tipo]||'var(--chalk)'};">${ev.tipo}</span>
@@ -1564,8 +1606,13 @@ function renderEventos(){
       <div class="pyear">${ev.fecha}${ev.hora ? ' · ' + ev.hora : ''}${ev.categoria ? ' · ' + ev.categoria : ''}</div>
       ${ev.lugar ? `<div class="pmeta"><span class="pmeta-item">📍 ${ev.lugar}</span></div>` : ''}
       ${ev.descripcion ? `<div class="pmeta" style="margin-top:6px;"><span class="pmeta-item" style="color:var(--chalk-dim);">${ev.descripcion}</span></div>` : ''}
-      <div style="margin-top:10px;"><a href="#" data-delevento="${ev.rowIndex}" style="color:var(--red); font-size:11.5px;">Eliminar</a></div>
+      ${esPartido ? `<div class="pmeta" style="margin-top:8px;"><span class="pmeta-item" style="color:var(--accent);">👥 Convocados: ${convN}</span><span class="pmeta-item" style="color:${ev.formacion?'var(--accent)':'var(--chalk-dim)'};">${ev.formacion ? '⚽ ' + ev.formacion.formacion : 'Sin alineación'}</span></div>` : ''}
+      <div style="margin-top:10px; display:flex; justify-content:space-between;">
+        ${esPartido ? `<a href="#" data-verficha="${ev.rowIndex}" style="color:var(--accent); font-size:11.5px;">Ver ficha del partido</a>` : '<span></span>'}
+        <a href="#" data-delevento="${ev.rowIndex}" style="color:var(--red); font-size:11.5px;">Eliminar</a>
+      </div>
     </div>`;
+  };
  
   let html = '';
   if (proximos.length){
@@ -1583,6 +1630,9 @@ function renderEventos(){
       await apiPost({ action:'deleteEvento', rowIndex: Number(a.dataset.delevento) });
       await loadAll();
     };
+  });
+  el.querySelectorAll('[data-verficha]').forEach(a=>{
+    a.onclick = (e) => { e.preventDefault(); abrirFichaPartido(Number(a.dataset.verficha)); };
   });
 }
 document.getElementById('eventoFilterTipo').addEventListener('change', renderEventos);
@@ -1628,6 +1678,99 @@ document.getElementById('saveEventoBtn').onclick = async () => {
   }catch(err){
     msg.textContent = '';
     alert('No se pudo crear el evento.\n\n' + err.message);
+  }
+};
+ 
+// ---------- FICHA DEL PARTIDO (Directiva: alineación + convocatoria, uniendo cualquier categoría) ----------
+const FORMATIONS_ADMIN = {
+  '4-3-3': { DEL:3, MED:3, DEF:4 },
+  '4-4-2': { DEL:2, MED:4, DEF:4 },
+  '3-5-2': { DEL:2, MED:5, DEF:3 },
+  '3-4-3': { DEL:3, MED:4, DEF:3 },
+  '5-3-2': { DEL:2, MED:3, DEF:5 }
+};
+let fichaPartidoEvento = null;
+let fichaAsignaciones = {};
+let fichaConvocados = new Set();
+ 
+function abrirFichaPartido(rowIndex){
+  const ev = STATE.eventos.find(e=>e.rowIndex===rowIndex);
+  if (!ev) return;
+  fichaPartidoEvento = ev;
+  document.getElementById('fichaPartidoTitle').textContent = ev.titulo + ' — ' + ev.fecha;
+  fichaConvocados = new Set(ev.convocatoria ? ev.convocatoria.jugadores : []);
+  fichaAsignaciones = ev.formacion ? {...ev.formacion.asignaciones} : {};
+  document.getElementById('fp_formacionSelect').value = (ev.formacion && FORMATIONS_ADMIN[ev.formacion.formacion]) ? ev.formacion.formacion : '4-3-3';
+  renderConvocatoriaList();
+  buildFichaPitch();
+  document.getElementById('fichaPartidoMsg').textContent = '';
+  document.getElementById('fichaPartidoOverlay').classList.add('show');
+}
+document.getElementById('closeFichaPartido').onclick = () => document.getElementById('fichaPartidoOverlay').classList.remove('show');
+document.getElementById('fichaPartidoOverlay').onclick = (e) => { if (e.target.id === 'fichaPartidoOverlay') e.currentTarget.classList.remove('show'); };
+ 
+function renderConvocatoriaList(){
+  const el = document.getElementById('convocatoriaList');
+  const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  el.innerHTML = activos.map(p=>`
+    <label class="convocado-check">
+      <input type="checkbox" data-convocado="${p.nombre.replace(/"/g,'&quot;')}" ${fichaConvocados.has(p.nombre)?'checked':''}>
+      #${p.numero||'--'} ${p.nombre} <span style="color:var(--chalk-dim);">(${p.posicion||'—'} · ${p.anioNacimiento||'—'})</span>
+    </label>`).join('');
+  el.querySelectorAll('[data-convocado]').forEach(cb=>{
+    cb.onchange = () => {
+      if (cb.checked) fichaConvocados.add(cb.dataset.convocado); else fichaConvocados.delete(cb.dataset.convocado);
+      document.getElementById('convocatoriaCount').textContent = fichaConvocados.size + ' jugador(es) convocado(s)';
+      buildFichaPitch(); // refresca las opciones del selector de alineación
+    };
+  });
+  document.getElementById('convocatoriaCount').textContent = fichaConvocados.size + ' jugador(es) convocado(s)';
+}
+ 
+document.getElementById('fp_formacionSelect').addEventListener('change', buildFichaPitch);
+ 
+function buildFichaPitch(){
+  const key = document.getElementById('fp_formacionSelect').value;
+  const conf = FORMATIONS_ADMIN[key];
+  const disponibles = STATE.players.filter(p => fichaConvocados.has(p.nombre));
+  const opciones = '<option value="">—</option>' + disponibles.map(p=>`<option value="${p.nombre.replace(/"/g,'&quot;')}">${p.nombre}</option>`).join('');
+ 
+  const buildLine = (prefix, count, label) => {
+    let slots = '';
+    for (let i=1;i<=count;i++){
+      const slotKey = prefix + i;
+      slots += `<div class="slot"><label>${label} ${count>1?i:''}</label><select data-slot="${slotKey}">${opciones}</select></div>`;
+    }
+    return `<div class="field-line">${slots}</div>`;
+  };
+ 
+  let html = buildLine('DEL', conf.DEL, 'Del.');
+  html += buildLine('MED', conf.MED, 'Med.');
+  html += buildLine('DEF', conf.DEF, 'Def.');
+  html += buildLine('POR', 1, 'Portero');
+  document.getElementById('fp_pitchContainer').innerHTML = html;
+ 
+  document.querySelectorAll('#fp_pitchContainer select').forEach(sel=>{
+    if (fichaAsignaciones[sel.dataset.slot]) sel.value = fichaAsignaciones[sel.dataset.slot];
+    sel.addEventListener('change', () => { fichaAsignaciones[sel.dataset.slot] = sel.value; });
+  });
+}
+ 
+document.getElementById('guardarFichaPartidoBtn').onclick = async () => {
+  const msg = document.getElementById('fichaPartidoMsg');
+  msg.textContent = 'Guardando...';
+  const formKey = document.getElementById('fp_formacionSelect').value;
+  const asignaciones = {};
+  document.querySelectorAll('#fp_pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
+  try{
+    await apiPost({ action:'guardarConvocatoria', eventoId: fichaPartidoEvento.rowIndex, profeNombre: 'Directiva', jugadores: Array.from(fichaConvocados) });
+    await apiPost({ action:'guardarFormacion', eventoId: fichaPartidoEvento.rowIndex, formacion: formKey, asignaciones, creadoPor: 'Directiva' });
+    msg.textContent = 'Guardado ✓';
+    await loadAll();
+    setTimeout(()=>document.getElementById('fichaPartidoOverlay').classList.remove('show'), 500);
+  }catch(err){
+    msg.textContent = '';
+    alert('No se pudo guardar.\n\n' + err.message);
   }
 };
 </script>
