@@ -333,6 +333,14 @@
 <div class="wrap">
  
   <!-- SETUP (solo se muestra si no hay conexión configurada) -->
+  <!-- LOADING (mientras conecta con la hoja) -->
+  <div id="loadingScreen" class="setup-screen" style="display:none;">
+    <div style="width:36px;height:36px;border:3px solid var(--pitch-line); border-top-color:var(--accent); border-radius:50%; margin:0 auto 16px; animation:spin 0.8s linear infinite;"></div>
+    <h2 style="font-size:16px;">Cargando la plantilla...</h2>
+    <p>Esto puede tardar unos segundos, sobre todo la primera vez.</p>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+ 
   <div id="setupScreen" class="setup-screen" style="display:none;">
     <h2>Conecta tu hoja de cálculo</h2>
     <p>Pega la URL de tu Apps Script (la que termina en <b>/exec</b>) para cargar la plantilla real del equipo.</p>
@@ -565,6 +573,8 @@ document.getElementById('photoPreview').innerHTML = JERSEY_SVG;
 // ---------- connection ----------
 function tryConnect(url, onErr){
   API_URL = url.trim();
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'block';
   loadAll(onErr);
 }
  
@@ -617,6 +627,7 @@ async function loadAll(onErr){
     if (data.error) throw new Error(data.error);
     STATE = data;
     document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('rosterView').style.display = 'block';
     populateFilters();
     document.getElementById('uniformeCostoInput').value = STATE.uniformeCosto;
@@ -624,6 +635,7 @@ async function loadAll(onErr){
     refreshSettingsStatus();
     document.getElementById('settingsMsg').textContent = 'Conectado ✓';
   }catch(err){
+    document.getElementById('loadingScreen').style.display = 'none';
     if (onErr) onErr('No se pudo conectar. Revisa que la URL termine en /exec y tenga acceso "Cualquier usuario". (' + err.message + ')');
     else { document.getElementById('setupScreen').style.display = 'block'; document.getElementById('rosterView').style.display = 'none'; }
   }
