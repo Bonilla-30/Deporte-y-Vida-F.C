@@ -1,3 +1,6 @@
+
+
+Index · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -363,6 +366,14 @@
       <div class="filter-group"><label>Estado</label>
         <select id="docFilterState"><option value="">Todos</option><option value="complete">Completa</option><option value="incomplete">Incompleta</option></select>
       </div>
+      <div class="filter-group"><label>Ordenar por</label>
+        <select id="docSort">
+          <option value="numero_asc">Número (menor a mayor)</option>
+          <option value="numero_desc">Número (mayor a menor)</option>
+          <option value="nombre_asc">Nombre (A-Z)</option>
+          <option value="nombre_desc">Nombre (Z-A)</option>
+        </select>
+      </div>
     </div>
     <div id="docsContent"></div>
   </div>
@@ -372,6 +383,14 @@
     <div class="filterbar">
       <div class="filter-group"><label>Categoría</label><select id="payFilterYear"><option value="">Todas</option></select></div>
       <div class="filter-group"><label>Posición</label><select id="payFilterPos"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Ordenar por</label>
+        <select id="paySort">
+          <option value="numero_asc">Número (menor a mayor)</option>
+          <option value="numero_desc">Número (mayor a menor)</option>
+          <option value="nombre_asc">Nombre (A-Z)</option>
+          <option value="nombre_desc">Nombre (Z-A)</option>
+        </select>
+      </div>
     </div>
     <div id="pagosContent"></div>
   </div>
@@ -383,6 +402,14 @@
       <input type="date" id="attDate">
       <button class="btn btn-primary" id="saveAttBtn">Guardar asistencia</button>
       <span class="save-msg" id="attSaveMsg"></span>
+      <div class="filter-group" style="margin-left:auto;"><label>Ordenar por</label>
+        <select id="attSort">
+          <option value="numero_asc">Número (menor a mayor)</option>
+          <option value="numero_desc">Número (mayor a menor)</option>
+          <option value="nombre_asc">Nombre (A-Z)</option>
+          <option value="nombre_desc">Nombre (Z-A)</option>
+        </select>
+      </div>
     </div>
     <div id="attendanceContent"></div>
   </div>
@@ -576,6 +603,15 @@ function populateFilters(){
 function getPositionTags(p){
   return String(p.posicion||'').split(/[\/,]+/).map(s=>s.trim()).filter(Boolean);
 }
+function sortPlayers(players, sortKey){
+  const arr = [...players];
+  switch(sortKey){
+    case 'nombre_asc': return arr.sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es'));
+    case 'nombre_desc': return arr.sort((a,b)=>String(b.nombre||'').localeCompare(String(a.nombre||''),'es'));
+    case 'numero_desc': return arr.sort((a,b)=>(b.numero||-999)-(a.numero||-999));
+    case 'numero_asc': default: return arr.sort((a,b)=>(a.numero||999)-(b.numero||999));
+  }
+}
  
 // ---------- helpers ----------
 function isDocComplete(p){
@@ -698,14 +734,15 @@ function renderDocs(){
   const fPos = document.getElementById('docFilterPos').value;
   const fYear = document.getElementById('docFilterYear').value;
   const fState = document.getElementById('docFilterState').value;
-  let players = STATE.players.filter(p=>{
+  const sortKey = document.getElementById('docSort').value;
+  let players = sortPlayers(STATE.players.filter(p=>{
     if (fPos && !getPositionTags(p).includes(fPos)) return false;
     if (fYear && String(p.anioNacimiento) !== fYear) return false;
     if (fState === 'complete' && !isDocComplete(p)) return false;
     if (fState === 'incomplete' && isDocComplete(p)) return false;
     if (!matchesSearch(p)) return false;
     return true;
-  }).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  }), sortKey);
  
   const el = document.getElementById('docsContent');
   if (!players.length){ el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>'; return; }
@@ -759,18 +796,19 @@ function renderDocs(){
     });
   });
 }
-['docFilterPos','docFilterYear','docFilterState'].forEach(id=>document.getElementById(id).addEventListener('change', renderDocs));
+['docFilterPos','docFilterYear','docFilterState','docSort'].forEach(id=>document.getElementById(id).addEventListener('change', renderDocs));
  
 // ---------- PAGOS TAB ----------
 function renderPagos(){
   const fPos = document.getElementById('payFilterPos').value;
   const fYear = document.getElementById('payFilterYear').value;
-  let players = STATE.players.filter(p=>{
+  const sortKey = document.getElementById('paySort').value;
+  let players = sortPlayers(STATE.players.filter(p=>{
     if (fPos && !getPositionTags(p).includes(fPos)) return false;
     if (fYear && String(p.anioNacimiento) !== fYear) return false;
     if (!matchesSearch(p)) return false;
     return true;
-  }).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  }), sortKey);
  
   const el = document.getElementById('pagosContent');
   if (!players.length){ el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>'; return; }
@@ -824,7 +862,7 @@ function renderPagos(){
     });
   });
 }
-['payFilterPos','payFilterYear'].forEach(id=>document.getElementById(id).addEventListener('change', renderPagos));
+['payFilterPos','payFilterYear','paySort'].forEach(id=>document.getElementById(id).addEventListener('change', renderPagos));
  
 // ---------- PLAYER MODAL (datos básicos + foto) ----------
 function openPlayerModal(rowIndex){
@@ -977,13 +1015,15 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('attDate').value = today;
 document.getElementById('attDate').addEventListener('change', renderAttendance);
+document.getElementById('attSort').addEventListener('change', renderAttendance);
  
 function renderAttendance(){
   pendingAttendance = {};
   const el = document.getElementById('attendanceContent');
   if (!STATE.players.length) return;
   const date = document.getElementById('attDate').value;
-  const filtered = STATE.players.filter(matchesSearch).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  const sortKey = document.getElementById('attSort').value;
+  const filtered = sortPlayers(STATE.players.filter(matchesSearch), sortKey);
   const activePlayers = filtered.filter(p=>!p.baja);
   const bajaPlayers = filtered.filter(p=>p.baja);
  
