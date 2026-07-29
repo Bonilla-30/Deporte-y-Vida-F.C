@@ -92,6 +92,8 @@
   .slot{display:flex; flex-direction:column; align-items:center; gap:4px; min-width:80px;}
   .slot label{font-size:9.5px; color:rgba(255,255,255,0.6); text-transform:uppercase;}
   .slot select{width:100%; font-size:11.5px; padding:6px 4px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.25); color:#fff; border-radius:6px;}
+  .convocado-check{display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px;}
+  .convocado-check input{width:16px; height:16px; accent-color:var(--accent);}
  
   @media(max-width:520px){
     .row2{grid-template-columns:1fr;}
@@ -161,7 +163,19 @@
     <div class="view active" id="view-alumnos">
       <div class="card">
         <div class="section-title">Mis alumnos</div>
+        <div class="row2" style="margin-bottom:16px;">
+          <div class="field"><label>Año de nacimiento</label><select id="filtroAnio"><option value="">Todos</option></select></div>
+          <div class="field"><label>Posición</label><select id="filtroPosicion"><option value="">Todas</option></select></div>
+        </div>
         <div id="alumnosList"></div>
+      </div>
+    </div>
+ 
+    <!-- FICHA TÉCNICA MODAL -->
+    <div class="overlay" id="fichaOverlay" style="position:fixed; inset:0; background:rgba(5,15,11,0.75); display:none; align-items:flex-start; justify-content:center; z-index:60; padding:30px 16px; overflow-y:auto;">
+      <div class="card" style="max-width:380px; width:100%; position:relative;">
+        <button id="closeFicha" style="position:absolute; top:14px; right:14px; background:none; border:none; color:var(--chalk-dim); font-size:20px; cursor:pointer;">&times;</button>
+        <div id="fichaTecnicaBody"></div>
       </div>
     </div>
  
@@ -194,20 +208,32 @@
     <!-- FORMACIONES -->
     <div class="view" id="view-formacion">
       <div class="card">
-        <div class="section-title">Planeador de formaciones</div>
-        <div class="field" style="max-width:220px; margin-bottom:16px;">
-          <label>Esquema</label>
-          <select id="formacionSelect">
-            <option value="4-3-3">4-3-3</option>
-            <option value="4-4-2">4-4-2</option>
-            <option value="3-5-2">3-5-2</option>
-            <option value="3-4-3">3-4-3</option>
-            <option value="5-3-2">5-3-2</option>
-          </select>
+        <div class="section-title">Alineación y convocatoria por partido</div>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Elige el partido</label>
+          <select id="partidoSelect"><option value="">Selecciona un partido...</option></select>
         </div>
-        <div class="field-pitch" id="pitchContainer"></div>
-        <button class="btn" id="guardarFormacionBtn" style="margin-top:16px;">Guardar formación</button>
-        <div class="msg" id="formacionMsg"></div>
+ 
+        <div id="formacionEditor" style="display:none;">
+          <div class="section-title" style="font-size:14px;">Convocados</div>
+          <div style="max-height:200px; overflow-y:auto; border:1px solid var(--pitch-line); border-radius:8px; padding:10px; margin-bottom:8px;" id="pfConvocatoriaList"></div>
+          <div style="font-size:12px; color:var(--chalk-dim); margin-bottom:18px;" id="pfConvocatoriaCount"></div>
+ 
+          <div class="section-title" style="font-size:14px;">Alineación</div>
+          <div class="field" style="max-width:200px; margin-bottom:14px;">
+            <label>Esquema</label>
+            <select id="formacionSelect">
+              <option value="4-3-3">4-3-3</option>
+              <option value="4-4-2">4-4-2</option>
+              <option value="3-5-2">3-5-2</option>
+              <option value="3-4-3">3-4-3</option>
+              <option value="5-3-2">5-3-2</option>
+            </select>
+          </div>
+          <div class="field-pitch" id="pitchContainer"></div>
+          <button class="btn" id="guardarFormacionBtn" style="margin-top:16px;">Guardar</button>
+          <div class="msg" id="formacionMsg"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -216,8 +242,19 @@
  
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbwVJVJmJCUtjjyvOj7rpY4GP_IG-_KINlKLZZRTkeFyxYCHzWZSg6TD4HpqV65e1EumkQ/exec';
+const SESSION_KEY = 'dyv_profe_session'; // guarda la sesión en este navegador para no cerrar sesión al refrescar
 let STATE = null;
 let miPerfil = null;
+ 
+function guardarSesion(nombre){
+  try{ localStorage.setItem(SESSION_KEY, nombre); }catch(e){ /* si el navegador bloquea localStorage, simplemente no persiste */ }
+}
+function leerSesion(){
+  try{ return localStorage.getItem(SESSION_KEY); }catch(e){ return null; }
+}
+function borrarSesion(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){ /* nada que hacer */ }
+}
  
 async function cargarDatos(){
   const select = document.getElementById('loginSelect');
@@ -230,6 +267,13 @@ async function cargarDatos(){
     if (!profes.length){ select.innerHTML = '<option value="">No hay profes registrados</option>'; return; }
     select.innerHTML = '<option value="">Elige tu nombre...</option>' +
       profes.map(p => `<option value="${p.rowIndex}">${p.nombre}${p.rol ? ' — ' + p.rol : ''}</option>`).join('');
+ 
+    // si ya había una sesión guardada en este navegador, entra directo sin pedir nada
+    const nombreGuardado = leerSesion();
+    if (nombreGuardado){
+      const encontrado = profes.find(p => p.nombre === nombreGuardado);
+      if (encontrado){ miPerfil = encontrado; entrarAlPanel(); return; }
+    }
   }catch(err){
     select.innerHTML = '<option value="">No se pudo cargar</option>';
     document.getElementById('loginMsg').textContent = 'Error de conexión: ' + err.message;
@@ -303,20 +347,23 @@ function resetLoginSteps(){
 }
  
 function entrarAlPanel(){
+  guardarSesion(miPerfil.nombre);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('panelHeader').style.display = 'flex';
   document.getElementById('panelBody').style.display = 'block';
   document.getElementById('miNombre').textContent = miPerfil.nombre;
   document.getElementById('miRol').textContent = (miPerfil.tipo === 'Directiva' ? 'Directiva' : (miPerfil.rol || 'Profe')) + (miPerfil.categoria ? ' · ' + miPerfil.categoria : '');
   document.getElementById('miFoto').innerHTML = miPerfil.foto ? `<img src="${miPerfil.foto}" alt="">` : '';
+  poblarFiltrosAlumnos();
   renderAlumnos();
   renderMisFaltas();
   renderEventos();
-  renderFormacion();
+  poblarPartidos();
 }
  
 document.getElementById('logoutBtn').onclick = () => {
   miPerfil = null;
+  borrarSesion();
   document.getElementById('panelHeader').style.display = 'none';
   document.getElementById('panelBody').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'block';
@@ -351,15 +398,33 @@ function attendancePctLocal(p){
   return Math.round(entries.filter(([,v])=>v).length / entries.length * 100);
 }
  
+function getPositionTagsLocal(p){
+  return String(p.posicion||'').split(/[\/,]+/).map(s=>s.trim()).filter(Boolean);
+}
+ 
+function poblarFiltrosAlumnos(){
+  const alumnos = getMisAlumnos();
+  const anios = [...new Set(alumnos.map(p=>String(p.anioNacimiento)).filter(Boolean))].sort();
+  const posiciones = [...new Set(alumnos.flatMap(getPositionTagsLocal))].sort();
+  document.getElementById('filtroAnio').innerHTML = '<option value="">Todos</option>' + anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  document.getElementById('filtroPosicion').innerHTML = '<option value="">Todas</option>' + posiciones.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+document.getElementById('filtroAnio').addEventListener('change', renderAlumnos);
+document.getElementById('filtroPosicion').addEventListener('change', renderAlumnos);
+ 
 function renderAlumnos(){
   const el = document.getElementById('alumnosList');
-  const alumnos = getMisAlumnos();
-  if (!alumnos.length){ el.innerHTML = '<p style="color:var(--chalk-dim); font-size:13px;">No tienes una categoría asignada, o no hay jugadores en ella todavía.</p>'; return; }
+  const fAnio = document.getElementById('filtroAnio').value;
+  const fPos = document.getElementById('filtroPosicion').value;
+  let alumnos = getMisAlumnos();
+  if (fAnio) alumnos = alumnos.filter(p => String(p.anioNacimiento) === fAnio);
+  if (fPos) alumnos = alumnos.filter(p => getPositionTagsLocal(p).includes(fPos));
+  if (!alumnos.length){ el.innerHTML = '<p style="color:var(--chalk-dim); font-size:13px;">No hay alumnos con esos filtros.</p>'; return; }
   el.innerHTML = alumnos.sort((a,b)=>(a.numero||999)-(b.numero||999)).map(p=>{
     const pct = attendancePctLocal(p);
     const foto = STATE.photos && STATE.photos[p.nombre];
     return `
-    <div class="alumno-row">
+    <div class="alumno-row" data-verficha="${p.rowIndex}" style="cursor:pointer;">
       <div class="alumno-photo">${foto ? `<img src="${foto}" alt="">` : ''}</div>
       <div class="alumno-info">
         <div class="alumno-name">#${p.numero||'--'} ${p.nombre}</div>
@@ -368,7 +433,37 @@ function renderAlumnos(){
       ${pct!==null ? `<div><div class="pct-bar-wrap"><div class="pct-bar" style="width:${pct}%"></div></div><span style="font-size:11.5px; color:var(--chalk-dim);">${pct}%</span></div>` : '<span style="font-size:11px; color:var(--chalk-dim);">Sin asistencia</span>'}
     </div>`;
   }).join('');
+  el.querySelectorAll('[data-verficha]').forEach(row=>{
+    row.onclick = () => abrirFichaTecnica(Number(row.dataset.verficha));
+  });
 }
+ 
+function abrirFichaTecnica(rowIndex){
+  const p = STATE.players.find(pl=>pl.rowIndex===rowIndex);
+  if (!p) return;
+  const pct = attendancePctLocal(p);
+  const foto = STATE.photos && STATE.photos[p.nombre];
+  const docsOk = STATE.docColumnNames.length && STATE.docColumnNames.every(n=>p.documentacion && p.documentacion[n]);
+  const docsFilled = STATE.docColumnNames.filter(n=>p.documentacion && p.documentacion[n]).length;
+  const uPct = STATE.uniformeCosto ? Math.min(100, Math.round(((p.uniformeMonto||0)/STATE.uniformeCosto)*100)) : 0;
+  document.getElementById('fichaTecnicaBody').innerHTML = `
+    <div style="text-align:center; margin-bottom:16px;">
+      <div style="width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--pitch-line); margin:0 auto 10px;">${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover;" alt="">`:''}</div>
+      <h2 style="margin:0; font-size:18px;">#${p.numero||'--'} ${p.nombre}</h2>
+      <div style="color:var(--chalk-dim); font-size:12.5px;">${p.posicion||'—'} · Nacido ${p.anioNacimiento||'—'}</div>
+    </div>
+    <div style="font-size:13px; line-height:2;">
+      <div><b>Teléfono jugador:</b> ${p.telJugador||'—'}</div>
+      <div><b>Tutor:</b> ${p.nombreTutor||'—'} ${p.telTutor?'('+p.telTutor+')':''}</div>
+      <div><b>Registrado:</b> ${p.fechaRegistro||'—'}</div>
+      <div><b>Documentación:</b> ${docsFilled}/${STATE.docColumnNames.length} ${docsOk?'✓ Completa':''}</div>
+      <div><b>Uniforme:</b> ${uPct}% pagado</div>
+      <div><b>Asistencia:</b> ${pct!==null ? pct+'%' : 'Sin registros'}</div>
+    </div>`;
+  document.getElementById('fichaOverlay').style.display = 'flex';
+}
+document.getElementById('closeFicha').onclick = () => document.getElementById('fichaOverlay').style.display = 'none';
+document.getElementById('fichaOverlay').onclick = (e) => { if (e.target.id === 'fichaOverlay') e.currentTarget.style.display = 'none'; };
  
 // ---------- falta ----------
 document.getElementById('enviarFaltaBtn').onclick = async () => {
@@ -435,7 +530,7 @@ function renderEventos(){
     </div>`).join('');
 }
  
-// ---------- formaciones ----------
+// ---------- formaciones por partido + convocatoria ----------
 const FORMATIONS = {
   '4-3-3': { DEL:3, MED:3, DEF:4 },
   '4-4-2': { DEL:2, MED:4, DEF:4 },
@@ -444,28 +539,63 @@ const FORMATIONS = {
   '5-3-2': { DEL:2, MED:3, DEF:5 }
 };
 let formacionActual = {};
+let convocadosActual = new Set();
+let partidoActual = null;
  
-function renderFormacion(){
-  const guardadas = miPerfil.formaciones || [];
-  const guardada = guardadas.find(f => f.categoria === (miPerfil.categoria || ''));
-  const formKey = guardada ? guardada.formacion : '4-3-3';
-  document.getElementById('formacionSelect').value = FORMATIONS[formKey] ? formKey : '4-3-3';
-  formacionActual = guardada ? guardada.asignaciones : {};
-  buildPitch();
+function poblarPartidos(){
+  const sel = document.getElementById('partidoSelect');
+  const today = new Date().toISOString().slice(0,10);
+  const partidos = (STATE.eventos || []).filter(ev => ev.tipo === 'Partido' && ev.fecha >= today).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if (!partidos.length){
+    sel.innerHTML = '<option value="">No hay partidos próximos programados</option>';
+    document.getElementById('formacionEditor').style.display = 'none';
+    return;
+  }
+  sel.innerHTML = '<option value="">Selecciona un partido...</option>' +
+    partidos.map(ev => `<option value="${ev.rowIndex}">${ev.fecha} — ${ev.titulo}</option>`).join('');
 }
+document.getElementById('partidoSelect').addEventListener('change', () => {
+  const rowIndex = Number(document.getElementById('partidoSelect').value);
+  if (!rowIndex){ document.getElementById('formacionEditor').style.display = 'none'; return; }
+  partidoActual = STATE.eventos.find(ev => ev.rowIndex === rowIndex);
+  document.getElementById('formacionEditor').style.display = 'block';
+  convocadosActual = new Set(partidoActual.convocatoria ? partidoActual.convocatoria.jugadores : []);
+  formacionActual = partidoActual.formacion ? {...partidoActual.formacion.asignaciones} : {};
+  document.getElementById('formacionSelect').value = (partidoActual.formacion && FORMATIONS[partidoActual.formacion.formacion]) ? partidoActual.formacion.formacion : '4-3-3';
+  renderConvocatoriaProfe();
+  buildPitch();
+});
+ 
+function renderConvocatoriaProfe(){
+  const el = document.getElementById('pfConvocatoriaList');
+  const alumnos = getMisAlumnos().sort((a,b)=>(a.numero||999)-(b.numero||999));
+  el.innerHTML = alumnos.map(p => `
+    <label class="convocado-check">
+      <input type="checkbox" data-conv="${p.nombre.replace(/"/g,'&quot;')}" ${convocadosActual.has(p.nombre)?'checked':''}>
+      #${p.numero||'--'} ${p.nombre}
+    </label>`).join('');
+  el.querySelectorAll('[data-conv]').forEach(cb=>{
+    cb.onchange = () => {
+      if (cb.checked) convocadosActual.add(cb.dataset.conv); else convocadosActual.delete(cb.dataset.conv);
+      document.getElementById('pfConvocatoriaCount').textContent = convocadosActual.size + ' jugador(es) convocado(s)';
+      buildPitch();
+    };
+  });
+  document.getElementById('pfConvocatoriaCount').textContent = convocadosActual.size + ' jugador(es) convocado(s)';
+}
+ 
 document.getElementById('formacionSelect').addEventListener('change', buildPitch);
  
 function buildPitch(){
   const key = document.getElementById('formacionSelect').value;
   const conf = FORMATIONS[key];
-  const alumnos = getMisAlumnos();
-  const opciones = '<option value="">—</option>' + alumnos.map(p=>`<option value="${p.nombre.replace(/"/g,'&quot;')}">${p.nombre}</option>`).join('');
+  const disponibles = getMisAlumnos().filter(p => convocadosActual.has(p.nombre));
+  const opciones = '<option value="">—</option>' + disponibles.map(p=>`<option value="${p.nombre.replace(/"/g,'&quot;')}">${p.nombre}</option>`).join('');
  
   const buildLine = (prefix, count, label) => {
     let slots = '';
     for (let i=1;i<=count;i++){
       const slotKey = prefix + i;
-      const val = formacionActual[slotKey] || '';
       slots += `<div class="slot"><label>${label} ${count>1?i:''}</label><select data-slot="${slotKey}">${opciones}</select></div>`;
     }
     return `<div class="field-line">${slots}</div>`;
@@ -485,18 +615,23 @@ function buildPitch(){
  
 document.getElementById('guardarFormacionBtn').onclick = async () => {
   const msg = document.getElementById('formacionMsg');
+  if (!partidoActual){ msg.textContent = 'Elige un partido primero.'; msg.className='msg err'; return; }
   const formKey = document.getElementById('formacionSelect').value;
   const asignaciones = {};
   document.querySelectorAll('#pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
   msg.textContent = 'Guardando...'; msg.className = 'msg';
   try{
+    await fetch(API_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'guardarConvocatoria', eventoId: partidoActual.rowIndex, profeNombre: miPerfil.nombre, jugadores: Array.from(convocadosActual) })
+    });
     const res = await fetch(API_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'guardarFormacion', profeNombre: miPerfil.nombre, categoria: miPerfil.categoria || '', formacion: formKey, asignaciones })
+      body: JSON.stringify({ action:'guardarFormacion', eventoId: partidoActual.rowIndex, formacion: formKey, asignaciones, creadoPor: miPerfil.nombre })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    msg.textContent = 'Formación guardada ✓'; msg.className = 'msg ok';
+    msg.textContent = 'Guardado ✓'; msg.className = 'msg ok';
   }catch(err){
     msg.textContent = 'No se pudo guardar: ' + err.message; msg.className = 'msg err';
   }
@@ -504,4 +639,3 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
 </script>
 </body>
 </html>
- 
