@@ -502,6 +502,8 @@ document.getElementById('gatePassword').addEventListener('keydown', (e) => { if 
  
 const JERSEY_SVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3L2 7l3 3 2-1.5V21h10V8.5L19 10l3-3-5-4-2 2h-6L7 3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>';
  
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbz6eMjESWm43xI-gQ_2uiC_gxrR9JyOkVsEYnTfwBGh_ZFkUL7Cd6NWgmqLRPhwDPFKqQ/exec'; // ya conectado — el sitio arranca solo en cualquier dispositivo
+ 
 let API_URL = '';
 let searchQuery = '';
 function matchesSearch(p){
@@ -583,8 +585,17 @@ async function loadAll(onErr){
   }
 }
  
-// primer arranque: no hay URL guardada, mostramos pantalla de configuración una sola vez
-document.getElementById('setupScreen').style.display = 'block';
+// primer arranque: si ya dejaste la URL puesta en DEFAULT_API_URL, conecta solo (funciona igual en cualquier dispositivo)
+if (DEFAULT_API_URL){
+  document.getElementById('setupUrlInput').value = DEFAULT_API_URL;
+  tryConnect(DEFAULT_API_URL, (msg) => {
+    document.getElementById('setupScreen').style.display = 'block';
+    document.getElementById('setupErr').textContent = msg;
+    document.getElementById('setupErr').style.display = 'block';
+  });
+} else {
+  document.getElementById('setupScreen').style.display = 'block';
+}
  
 function populateFilters(){
   const posSet = new Set();
@@ -1088,4 +1099,3 @@ document.getElementById('saveAttBtn').onclick = async () => {
 </script>
 </body>
 </html>
- 
