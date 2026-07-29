@@ -387,7 +387,7 @@ function getMisAlumnos(){
   const activos = (STATE.players || []).filter(p => !p.baja);
   if (!cat) return [];
   if (cat.includes('todas')) return activos;
-  return activos.filter(p => cat.includes(String(p.anioNacimiento)));
+  return activos.filter(p => cat.includes(String(p.anioNacimiento)) || (p.equipo && cat.includes(String(p.equipo).toLowerCase())));
 }
  
 function attendancePctLocal(p){
@@ -443,9 +443,6 @@ function abrirFichaTecnica(rowIndex){
   if (!p) return;
   const pct = attendancePctLocal(p);
   const foto = STATE.photos && STATE.photos[p.nombre];
-  const docsOk = STATE.docColumnNames.length && STATE.docColumnNames.every(n=>p.documentacion && p.documentacion[n]);
-  const docsFilled = STATE.docColumnNames.filter(n=>p.documentacion && p.documentacion[n]).length;
-  const uPct = STATE.uniformeCosto ? Math.min(100, Math.round(((p.uniformeMonto||0)/STATE.uniformeCosto)*100)) : 0;
   document.getElementById('fichaTecnicaBody').innerHTML = `
     <div style="text-align:center; margin-bottom:16px;">
       <div style="width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--pitch-line); margin:0 auto 10px;">${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover;" alt="">`:''}</div>
@@ -455,9 +452,7 @@ function abrirFichaTecnica(rowIndex){
     <div style="font-size:13px; line-height:2;">
       <div><b>Teléfono jugador:</b> ${p.telJugador||'—'}</div>
       <div><b>Tutor:</b> ${p.nombreTutor||'—'} ${p.telTutor?'('+p.telTutor+')':''}</div>
-      <div><b>Registrado:</b> ${p.fechaRegistro||'—'}</div>
-      <div><b>Documentación:</b> ${docsFilled}/${STATE.docColumnNames.length} ${docsOk?'✓ Completa':''}</div>
-      <div><b>Uniforme:</b> ${uPct}% pagado</div>
+      <div><b>Equipo:</b> ${p.equipo||'—'}</div>
       <div><b>Asistencia:</b> ${pct!==null ? pct+'%' : 'Sin registros'}</div>
     </div>`;
   document.getElementById('fichaOverlay').style.display = 'flex';
@@ -559,29 +554,57 @@ document.getElementById('partidoSelect').addEventListener('change', () => {
   if (!rowIndex){ document.getElementById('formacionEditor').style.display = 'none'; return; }
   partidoActual = STATE.eventos.find(ev => ev.rowIndex === rowIndex);
   document.getElementById('formacionEditor').style.display = 'block';
-  convocadosActual = new Set(partidoActual.convocatoria ? partidoActual.convocatoria.jugadores : []);
+  pfStats = {};
+  (partidoActual.convocatoria ? partidoActual.convocatoria.jugadores : []).forEach(j=>{
+    if (typeof j === 'string') pfStats[j] = { convocado:true, jugo:false, goles:0 };
+    else pfStats[j.nombre] = { convocado:true, jugo: !!j.jugo, goles: Number(j.goles)||0 };
+  });
   formacionActual = partidoActual.formacion ? {...partidoActual.formacion.asignaciones} : {};
   document.getElementById('formacionSelect').value = (partidoActual.formacion && FORMATIONS[partidoActual.formacion.formacion]) ? partidoActual.formacion.formacion : '4-3-3';
   renderConvocatoriaProfe();
   buildPitch();
 });
  
+let pfStats = {}; // { nombre: { convocado, jugo, goles } }
+ 
 function renderConvocatoriaProfe(){
   const el = document.getElementById('pfConvocatoriaList');
   const alumnos = getMisAlumnos().sort((a,b)=>(a.numero||999)-(b.numero||999));
-  el.innerHTML = alumnos.map(p => `
-    <label class="convocado-check">
-      <input type="checkbox" data-conv="${p.nombre.replace(/"/g,'&quot;')}" ${convocadosActual.has(p.nombre)?'checked':''}>
-      #${p.numero||'--'} ${p.nombre}
-    </label>`).join('');
+  el.innerHTML = `<button type="button" class="btn-ghost btn" id="convocarTodosProfeBtn" style="margin-bottom:10px; padding:6px 12px; font-size:12px;">Marcar a todos como convocados</button>` +
+    alumnos.map(p => {
+    const st = pfStats[p.nombre] || { convocado:false, jugo:false, goles:0 };
+    const nombreAttr = p.nombre.replace(/"/g,'&quot;');
+    return `
+    <div style="border-bottom:1px solid rgba(255,255,255,0.06); padding:6px 0;">
+      <label class="convocado-check">
+        <input type="checkbox" data-conv="${nombreAttr}" ${st.convocado?'checked':''}>
+        #${p.numero||'--'} ${p.nombre}
+      </label>
+      <div data-statsrow="${nombreAttr}" style="display:${st.convocado?'flex':'none'}; align-items:center; gap:14px; margin:6px 0 0 24px; font-size:12px;">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" data-jugo="${nombreAttr}" ${st.jugo?'checked':''}> Jugó</label>
+        <label style="display:flex; align-items:center; gap:5px;">Goles <input type="number" min="0" data-goles="${nombreAttr}" value="${st.goles||0}" style="width:50px; background:var(--pitch-dark); border:1px solid var(--pitch-line); color:var(--chalk); border-radius:4px; padding:3px 5px;"></label>
+      </div>
+    </div>`;
+  }).join('');
+ 
+  document.getElementById('convocarTodosProfeBtn').onclick = () => {
+    alumnos.forEach(p=>{ if (!pfStats[p.nombre]) pfStats[p.nombre] = { convocado:true, jugo:false, goles:0 }; else pfStats[p.nombre].convocado = true; });
+    renderConvocatoriaProfe();
+    buildPitch();
+  };
   el.querySelectorAll('[data-conv]').forEach(cb=>{
     cb.onchange = () => {
-      if (cb.checked) convocadosActual.add(cb.dataset.conv); else convocadosActual.delete(cb.dataset.conv);
-      document.getElementById('pfConvocatoriaCount').textContent = convocadosActual.size + ' jugador(es) convocado(s)';
+      const nombre = cb.dataset.conv;
+      if (!pfStats[nombre]) pfStats[nombre] = { convocado:false, jugo:false, goles:0 };
+      pfStats[nombre].convocado = cb.checked;
+      el.querySelector(`[data-statsrow="${nombre.replace(/"/g,'\\"')}"]`).style.display = cb.checked ? 'flex' : 'none';
+      document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
       buildPitch();
     };
   });
-  document.getElementById('pfConvocatoriaCount').textContent = convocadosActual.size + ' jugador(es) convocado(s)';
+  el.querySelectorAll('[data-jugo]').forEach(cb=>{ cb.onchange = () => { pfStats[cb.dataset.jugo].jugo = cb.checked; }; });
+  el.querySelectorAll('[data-goles]').forEach(inp=>{ inp.onchange = () => { pfStats[inp.dataset.goles].goles = Number(inp.value)||0; }; });
+  document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
 }
  
 document.getElementById('formacionSelect').addEventListener('change', buildPitch);
@@ -589,7 +612,7 @@ document.getElementById('formacionSelect').addEventListener('change', buildPitch
 function buildPitch(){
   const key = document.getElementById('formacionSelect').value;
   const conf = FORMATIONS[key];
-  const disponibles = getMisAlumnos().filter(p => convocadosActual.has(p.nombre));
+  const disponibles = getMisAlumnos().filter(p => pfStats[p.nombre] && pfStats[p.nombre].convocado);
   const opciones = '<option value="">—</option>' + disponibles.map(p=>`<option value="${p.nombre.replace(/"/g,'&quot;')}">${p.nombre}</option>`).join('');
  
   const buildLine = (prefix, count, label) => {
@@ -619,11 +642,12 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
   const formKey = document.getElementById('formacionSelect').value;
   const asignaciones = {};
   document.querySelectorAll('#pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
+  const jugadores = Object.keys(pfStats).filter(n=>pfStats[n].convocado).map(n=>({ nombre:n, jugo: pfStats[n].jugo, goles: pfStats[n].goles }));
   msg.textContent = 'Guardando...'; msg.className = 'msg';
   try{
     await fetch(API_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'guardarConvocatoria', eventoId: partidoActual.rowIndex, profeNombre: miPerfil.nombre, jugadores: Array.from(convocadosActual) })
+      body: JSON.stringify({ action:'guardarConvocatoria', eventoId: partidoActual.rowIndex, profeNombre: miPerfil.nombre, jugadores })
     });
     const res = await fetch(API_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -639,3 +663,4 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
 </script>
 </body>
 </html>
+ 
