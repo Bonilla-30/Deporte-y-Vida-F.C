@@ -1,4 +1,4 @@
-<DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -927,22 +927,29 @@ document.getElementById('saveBtn').onclick = async () => {
  
   try{
     if (isNewPlayer){
-      await apiPost({ action:'addPlayer', player: fields });
+      const r = await apiPost({ action:'addPlayer', player: fields });
+      if (r.error) throw new Error('Al guardar datos: ' + r.error);
     } else {
-      await apiPost({ action:'updatePlayer', rowIndex: currentPlayerRow, fields });
+      const r = await apiPost({ action:'updatePlayer', rowIndex: currentPlayerRow, fields });
+      if (r.error) throw new Error('Al guardar datos: ' + r.error);
     }
     if (nombre){
-      await apiPost({ action:'setBaja', nombre, baja: bajaChecked });
-      await apiPost({ action:'setFechaRegistro', nombre, fecha: fechaRegistro });
+      const r1 = await apiPost({ action:'setBaja', nombre, baja: bajaChecked });
+      if (r1.error) throw new Error('Al guardar estado: ' + r1.error);
+      const r2 = await apiPost({ action:'setFechaRegistro', nombre, fecha: fechaRegistro });
+      if (r2.error) throw new Error('Al guardar fecha: ' + r2.error);
     }
     if (pendingPhotoDataUrl && nombre){
-      await apiPost({ action:'uploadPhoto', nombre, dataUrl: pendingPhotoDataUrl });
+      msg.textContent = 'Subiendo foto...';
+      const rPhoto = await apiPost({ action:'uploadPhoto', nombre, dataUrl: pendingPhotoDataUrl });
+      if (rPhoto.error) throw new Error('Al subir la foto: ' + rPhoto.error);
     }
     msg.textContent = 'Guardado ✓';
     await loadAll();
     setTimeout(()=>document.getElementById('playerOverlay').classList.remove('show'), 400);
   }catch(err){
-    msg.textContent = 'Error al guardar';
+    msg.textContent = '';
+    alert('No se pudo guardar completamente.\n\n' + err.message);
   }
 };
 document.getElementById('deleteBtn').onclick = async () => {
