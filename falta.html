@@ -84,16 +84,30 @@
  
   /* formaciones */
   .field-pitch{
-    background:linear-gradient(180deg, #1a5c34, #143f26); border-radius:12px; padding:20px 12px; position:relative;
-    border:2px solid rgba(255,255,255,0.15);
+    background:linear-gradient(180deg, #1d6b3c 0%, #1a5c34 50%, #143f26 100%); border-radius:14px; padding:22px 12px; position:relative;
+    border:2px solid rgba(255,255,255,0.18); box-shadow:inset 0 0 40px rgba(0,0,0,0.25);
   }
-  .field-line{display:flex; justify-content:space-around; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  .field-line{display:flex; justify-content:space-around; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
   .field-line:last-child{margin-bottom:0;}
-  .slot{display:flex; flex-direction:column; align-items:center; gap:4px; min-width:80px;}
-  .slot label{font-size:9.5px; color:rgba(255,255,255,0.6); text-transform:uppercase;}
-  .slot select{width:100%; font-size:11.5px; padding:6px 4px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.25); color:#fff; border-radius:6px;}
-  .convocado-check{display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px;}
-  .convocado-check input{width:16px; height:16px; accent-color:var(--accent);}
+  .slot{display:flex; flex-direction:column; align-items:center; gap:5px; min-width:80px;}
+  .slot label{font-size:9.5px; color:rgba(255,255,255,0.65); text-transform:uppercase; letter-spacing:0.4px; font-weight:700;}
+  .slot select{
+    width:100%; font-size:11.5px; padding:8px 6px; background:rgba(0,0,0,0.4); border:1.5px solid rgba(255,255,255,0.3);
+    color:#fff; border-radius:8px; text-align:center; font-weight:600;
+  }
+  .convocatoria-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;}
+  .convocatoria-count-badge{font-size:11.5px; font-weight:700; color:var(--pitch-dark); background:var(--accent); padding:4px 10px; border-radius:999px;}
+  .convocado-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding:9px 10px; border-radius:8px; margin-bottom:5px; background:var(--pitch-dark); border:1px solid var(--pitch-line);
+  }
+  .convocado-row.is-on{border-color:var(--accent-dim); background:rgba(79,201,62,0.06);}
+  .convocado-check{display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; cursor:pointer;}
+  .convocado-check input{width:16px; height:16px; accent-color:var(--accent); cursor:pointer;}
+  .convocado-stats{display:flex; align-items:center; gap:14px; font-size:11.5px; color:var(--chalk-dim); flex-wrap:wrap;}
+  .convocado-stats label{display:flex; align-items:center; gap:5px; cursor:pointer;}
+  .convocado-stats input[type=checkbox]{width:14px; height:14px; accent-color:var(--accent); cursor:pointer;}
+  .convocado-stats input[type=number]{width:44px; background:var(--card); border:1px solid var(--pitch-line); color:var(--chalk); border-radius:5px; padding:3px 5px; text-align:center;}
  
   @media(max-width:520px){
     .row2{grid-template-columns:1fr;}
@@ -216,8 +230,7 @@
  
         <div id="formacionEditor" style="display:none;">
           <div class="section-title" style="font-size:14px;">Convocados</div>
-          <div style="max-height:200px; overflow-y:auto; border:1px solid var(--pitch-line); border-radius:8px; padding:10px; margin-bottom:8px;" id="pfConvocatoriaList"></div>
-          <div style="font-size:12px; color:var(--chalk-dim); margin-bottom:18px;" id="pfConvocatoriaCount"></div>
+          <div style="max-height:280px; overflow-y:auto; border:1px solid var(--pitch-line); border-radius:8px; padding:10px; margin-bottom:18px;" id="pfConvocatoriaList"></div>
  
           <div class="section-title" style="font-size:14px;">Alineación</div>
           <div class="field" style="max-width:200px; margin-bottom:14px;">
@@ -556,8 +569,8 @@ document.getElementById('partidoSelect').addEventListener('change', () => {
   document.getElementById('formacionEditor').style.display = 'block';
   pfStats = {};
   (partidoActual.convocatoria ? partidoActual.convocatoria.jugadores : []).forEach(j=>{
-    if (typeof j === 'string') pfStats[j] = { convocado:true, jugo:false, goles:0 };
-    else pfStats[j.nombre] = { convocado:true, jugo: !!j.jugo, goles: Number(j.goles)||0 };
+    if (typeof j === 'string') pfStats[j] = { convocado:true, asistio:false, jugo:false, goles:0 };
+    else pfStats[j.nombre] = { convocado:true, asistio: !!j.asistio, jugo: !!j.jugo, goles: Number(j.goles)||0 };
   });
   formacionActual = partidoActual.formacion ? {...partidoActual.formacion.asignaciones} : {};
   document.getElementById('formacionSelect').value = (partidoActual.formacion && FORMATIONS[partidoActual.formacion.formacion]) ? partidoActual.formacion.formacion : '4-3-3';
@@ -565,46 +578,57 @@ document.getElementById('partidoSelect').addEventListener('change', () => {
   buildPitch();
 });
  
-let pfStats = {}; // { nombre: { convocado, jugo, goles } }
+let pfStats = {}; // { nombre: { convocado, asistio, jugo, goles } }
  
 function renderConvocatoriaProfe(){
   const el = document.getElementById('pfConvocatoriaList');
   const alumnos = getMisAlumnos().sort((a,b)=>(a.numero||999)-(b.numero||999));
-  el.innerHTML = `<button type="button" class="btn-ghost btn" id="convocarTodosProfeBtn" style="margin-bottom:10px; padding:6px 12px; font-size:12px;">Marcar a todos como convocados</button>` +
-    alumnos.map(p => {
-    const st = pfStats[p.nombre] || { convocado:false, jugo:false, goles:0 };
+ 
+  const toolbar = `<div class="convocatoria-toolbar">
+    <button type="button" class="btn btn-ghost" id="convocarTodosProfeBtn" style="padding:6px 12px; font-size:12px;">+ Marcar a todos</button>
+    <span class="convocatoria-count-badge" id="pfConvocatoriaCount">0 convocados</span>
+  </div>`;
+ 
+  const rows = alumnos.map(p => {
+    const st = pfStats[p.nombre] || { convocado:false, asistio:false, jugo:false, goles:0 };
     const nombreAttr = p.nombre.replace(/"/g,'&quot;');
     return `
-    <div style="border-bottom:1px solid rgba(255,255,255,0.06); padding:6px 0;">
+    <div class="convocado-row ${st.convocado?'is-on':''}" data-rowfor="${nombreAttr}">
       <label class="convocado-check">
         <input type="checkbox" data-conv="${nombreAttr}" ${st.convocado?'checked':''}>
         #${p.numero||'--'} ${p.nombre}
       </label>
-      <div data-statsrow="${nombreAttr}" style="display:${st.convocado?'flex':'none'}; align-items:center; gap:14px; margin:6px 0 0 24px; font-size:12px;">
-        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" data-jugo="${nombreAttr}" ${st.jugo?'checked':''}> Jugó</label>
-        <label style="display:flex; align-items:center; gap:5px;">Goles <input type="number" min="0" data-goles="${nombreAttr}" value="${st.goles||0}" style="width:50px; background:var(--pitch-dark); border:1px solid var(--pitch-line); color:var(--chalk); border-radius:4px; padding:3px 5px;"></label>
+      <div class="convocado-stats" data-statsrow="${nombreAttr}" style="display:${st.convocado?'flex':'none'};">
+        <label><input type="checkbox" data-asistio="${nombreAttr}" ${st.asistio?'checked':''}> Asistió</label>
+        <label><input type="checkbox" data-jugo="${nombreAttr}" ${st.jugo?'checked':''}> Jugó</label>
+        <label>Goles <input type="number" min="0" data-goles="${nombreAttr}" value="${st.goles||0}"></label>
       </div>
     </div>`;
   }).join('');
  
+  el.innerHTML = toolbar + rows;
+ 
   document.getElementById('convocarTodosProfeBtn').onclick = () => {
-    alumnos.forEach(p=>{ if (!pfStats[p.nombre]) pfStats[p.nombre] = { convocado:true, jugo:false, goles:0 }; else pfStats[p.nombre].convocado = true; });
+    alumnos.forEach(p=>{ if (!pfStats[p.nombre]) pfStats[p.nombre] = { convocado:true, asistio:false, jugo:false, goles:0 }; else pfStats[p.nombre].convocado = true; });
     renderConvocatoriaProfe();
     buildPitch();
   };
   el.querySelectorAll('[data-conv]').forEach(cb=>{
     cb.onchange = () => {
       const nombre = cb.dataset.conv;
-      if (!pfStats[nombre]) pfStats[nombre] = { convocado:false, jugo:false, goles:0 };
+      if (!pfStats[nombre]) pfStats[nombre] = { convocado:false, asistio:false, jugo:false, goles:0 };
       pfStats[nombre].convocado = cb.checked;
-      el.querySelector(`[data-statsrow="${nombre.replace(/"/g,'\\"')}"]`).style.display = cb.checked ? 'flex' : 'none';
-      document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
+      const row = el.querySelector(`[data-rowfor="${nombre.replace(/"/g,'\\"')}"]`);
+      row.classList.toggle('is-on', cb.checked);
+      row.querySelector('[data-statsrow]').style.display = cb.checked ? 'flex' : 'none';
+      document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' convocados';
       buildPitch();
     };
   });
+  el.querySelectorAll('[data-asistio]').forEach(cb=>{ cb.onchange = () => { pfStats[cb.dataset.asistio].asistio = cb.checked; }; });
   el.querySelectorAll('[data-jugo]').forEach(cb=>{ cb.onchange = () => { pfStats[cb.dataset.jugo].jugo = cb.checked; }; });
   el.querySelectorAll('[data-goles]').forEach(inp=>{ inp.onchange = () => { pfStats[inp.dataset.goles].goles = Number(inp.value)||0; }; });
-  document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
+  document.getElementById('pfConvocatoriaCount').textContent = Object.values(pfStats).filter(s=>s.convocado).length + ' convocados';
 }
  
 document.getElementById('formacionSelect').addEventListener('change', buildPitch);
@@ -642,7 +666,7 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
   const formKey = document.getElementById('formacionSelect').value;
   const asignaciones = {};
   document.querySelectorAll('#pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
-  const jugadores = Object.keys(pfStats).filter(n=>pfStats[n].convocado).map(n=>({ nombre:n, jugo: pfStats[n].jugo, goles: pfStats[n].goles }));
+  const jugadores = Object.keys(pfStats).filter(n=>pfStats[n].convocado).map(n=>({ nombre:n, asistio: pfStats[n].asistio, jugo: pfStats[n].jugo, goles: pfStats[n].goles }));
   msg.textContent = 'Guardando...'; msg.className = 'msg';
   try{
     await fetch(API_URL, {
