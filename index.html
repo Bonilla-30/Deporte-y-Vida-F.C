@@ -814,9 +814,10 @@ function pagosFilled(p){
 function attendancePct(p){
   const rec = STATE.attendanceRecords[p.nombre];
   if (!rec) return null;
-  const vals = Object.values(rec);
-  if (!vals.length) return null;
-  return Math.round(vals.filter(v=>v).length / vals.length * 100);
+  const entries = Object.entries(rec).filter(([fecha]) => !p.fechaRegistro || fecha >= p.fechaRegistro);
+  if (!entries.length) return null;
+  const presentes = entries.filter(([,v])=>v).length;
+  return Math.round(presentes / entries.length * 100);
 }
 function photoTag(p, size){
   const url = STATE.photos && STATE.photos[p.nombre];
@@ -1366,9 +1367,10 @@ function renderProfeFaltasList(pf){
   const el = document.getElementById('profeFaltasList');
   if (!pf || !pf.faltas || !pf.faltas.length){ el.innerHTML = 'Sin faltas registradas.'; return; }
   const sorted = [...pf.faltas].sort((a,b)=>b.fechaInicio.localeCompare(a.fechaInicio));
-  el.innerHTML = 'Faltas registradas:<br>' + sorted.map(f =>
-    `${rangoFalta(f)}${f.motivo ? ' — ' + f.motivo : ''} <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`
-  ).join('<br>');
+  el.innerHTML = 'Faltas registradas:<br>' + sorted.map(f => {
+    const ok = f.estado === 'Aceptada';
+    return `${rangoFalta(f)}${f.motivo ? ' — ' + f.motivo : ''} <span style="color:${ok?'var(--accent)':'var(--amber)'}; font-weight:600;">${ok?'✓ Aceptada':'Pendiente'}</span> <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`;
+  }).join('<br>');
   el.querySelectorAll('[data-delfalta]').forEach(a=>{
     a.onclick = async (e) => {
       e.preventDefault();
