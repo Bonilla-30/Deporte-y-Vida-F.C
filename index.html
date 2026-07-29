@@ -444,6 +444,11 @@
         <input type="text" id="correoAdminInput" placeholder="encargado@correo.com" style="width:190px;">
         <button class="btn btn-ghost" id="correoAdminSaveBtn" style="padding:7px 12px; font-size:12px;">Guardar</button>
       </div>
+      <div class="filter-group">
+        <label>Enlace del grupo de WhatsApp</label>
+        <input type="text" id="whatsappGrupoInput" placeholder="https://chat.whatsapp.com/..." style="width:190px;">
+        <button class="btn btn-ghost" id="whatsappGrupoSaveBtn" style="padding:7px 12px; font-size:12px;">Guardar</button>
+      </div>
       <button class="add-btn" id="addProfeBtn">+ Agregar profe</button>
     </div>
     <div id="profesContent"></div>
@@ -474,6 +479,15 @@
       <h3 id="profeModalTitle">Profe</h3>
       <button class="close-x" id="closeProfeModal">&times;</button>
     </div>
+ 
+    <div class="photo-row">
+      <div class="photo-big" id="pfPhotoPreview"></div>
+      <div class="photo-actions">
+        <label class="upload-btn">Subir foto<input type="file" id="pfPhotoInput" accept="image/*"></label>
+        <div class="photo-hint" id="pfPhotoHint">JPG o PNG. Se ajusta automático.</div>
+      </div>
+    </div>
+ 
     <div class="field-row single">
       <div class="field"><label>Nombre completo</label><input id="pf_nombre"></div>
     </div>
@@ -493,7 +507,10 @@
  
     <div class="section-label">Avisar una falta</div>
     <div class="field-row">
-      <div class="field"><label>Fecha</label><input type="date" id="pf_faltaFecha"></div>
+      <div class="field"><label>Desde</label><input type="date" id="pf_faltaDesde"></div>
+      <div class="field"><label>Hasta (si son varios días)</label><input type="date" id="pf_faltaHasta"></div>
+    </div>
+    <div class="field-row single">
       <div class="field"><label>Motivo (opcional)</label><input id="pf_faltaMotivo" placeholder="Ej. Cita médica"></div>
     </div>
     <div style="display:flex; gap:10px; margin-bottom:16px;">
@@ -592,7 +609,7 @@ function matchesSearch(p){
   const q = searchQuery.toLowerCase();
   return String(p.nombre||'').toLowerCase().includes(q) || String(p.numero||'').toLowerCase().includes(q);
 }
-let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {}, uniformeCosto: 500, profes: [], correoAdmin: '' };
+let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {}, uniformeCosto: 500, profes: [], correoAdmin: '', whatsappGrupoLink: '' };
 let currentPlayerRow = null;
 let isNewPlayer = false;
 let pendingAttendance = {};
@@ -662,6 +679,7 @@ async function loadAll(onErr){
     populateFilters();
     document.getElementById('uniformeCostoInput').value = STATE.uniformeCosto;
     document.getElementById('correoAdminInput').value = STATE.correoAdmin || '';
+    document.getElementById('whatsappGrupoInput').value = STATE.whatsappGrupoLink || '';
     renderRoster(); renderDocs(); renderPagos(); renderAttendance(); renderProfes();
     refreshSettingsStatus();
     document.getElementById('settingsMsg').textContent = 'Conectado ✓';
@@ -1010,6 +1028,12 @@ document.getElementById('correoAdminSaveBtn').onclick = async () => {
   STATE.correoAdmin = val;
   alert('Correo guardado. Las faltas que se registren avisarán a: ' + (val || '(ninguno configurado)'));
 };
+document.getElementById('whatsappGrupoSaveBtn').onclick = async () => {
+  const val = document.getElementById('whatsappGrupoInput').value.trim();
+  await apiPost({ action:'setConfig', key:'whatsappGrupoLink', value: val });
+  STATE.whatsappGrupoLink = val;
+  alert('Enlace del grupo guardado.');
+};
  
 // ---------- PLAYER MODAL (datos básicos + foto) ----------
 function openPlayerModal(rowIndex){
@@ -1240,6 +1264,16 @@ document.getElementById('saveAttBtn').onclick = async () => {
 // ---------- PROFES TAB ----------
 let currentProfeRow = null;
 let isNewProfe = false;
+let pendingProfePhotoDataUrl = null;
+ 
+function profePhotoTag(pf){
+  const fallback = JERSEY_SVG.replace(/"/g, '&quot;');
+  return pf && pf.foto ? `<img src="${pf.foto}" alt="" onerror="this.outerHTML='${fallback}';">` : JERSEY_SVG;
+}
+ 
+function rangoFalta(f){
+  return f.fechaInicio === f.fechaFin ? f.fechaInicio : (f.fechaInicio + ' al ' + f.fechaFin);
+}
  
 function renderProfes(){
   const el = document.getElementById('profesContent');
@@ -1249,11 +1283,11 @@ function renderProfes(){
  
   const today = new Date().toISOString().slice(0,10);
   const cards = profes.map(pf => {
-    const proximaFalta = (pf.faltas||[]).filter(f=>f.fecha >= today).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+    const proximaFalta = (pf.faltas||[]).filter(f=>f.fechaFin >= today).sort((a,b)=>a.fechaInicio.localeCompare(b.fechaInicio))[0];
     return `
     <div class="pcard" data-row="${pf.rowIndex}">
       <div class="pcard-top">
-        <div class="pphoto">${JERSEY_SVG}</div>
+        <div class="pphoto">${profePhotoTag(pf)}</div>
         <div class="pcard-headtext">
           <span class="pos-badge">${pf.tipo === 'Directiva' ? 'Directiva' : (pf.rol || 'Profe')}</span>
         </div>
@@ -1261,7 +1295,7 @@ function renderProfes(){
       <div class="pname">${pf.nombre}</div>
       <div class="pyear">${pf.rol && pf.tipo === 'Directiva' ? pf.rol + ' · ' : ''}${pf.categoria ? 'A cargo de ' + pf.categoria : 'Sin categoría asignada'}</div>
       ${pf.telefono ? `<div class="pmeta"><span class="pmeta-item">📞 ${pf.telefono}</span></div>` : ''}
-      ${proximaFalta ? `<div class="pmeta" style="margin-top:6px;"><span class="pmeta-item" style="color:var(--red);">⚠ Falta el ${proximaFalta.fecha}${proximaFalta.motivo ? ' — ' + proximaFalta.motivo : ''}</span></div>` : ''}
+      ${proximaFalta ? `<div class="pmeta" style="margin-top:6px;"><span class="pmeta-item" style="color:var(--red);">⚠ Falta ${rangoFalta(proximaFalta)}${proximaFalta.motivo ? ' — ' + proximaFalta.motivo : ''}</span></div>` : ''}
     </div>`;
   }).join('');
   el.innerHTML = `<div class="grid">${cards}</div>`;
@@ -1272,9 +1306,9 @@ document.getElementById('profeFilterTipo').addEventListener('change', renderProf
 function renderProfeFaltasList(pf){
   const el = document.getElementById('profeFaltasList');
   if (!pf || !pf.faltas || !pf.faltas.length){ el.innerHTML = 'Sin faltas registradas.'; return; }
-  const sorted = [...pf.faltas].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const sorted = [...pf.faltas].sort((a,b)=>b.fechaInicio.localeCompare(a.fechaInicio));
   el.innerHTML = 'Faltas registradas:<br>' + sorted.map(f =>
-    `${f.fecha}${f.motivo ? ' — ' + f.motivo : ''} <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`
+    `${rangoFalta(f)}${f.motivo ? ' — ' + f.motivo : ''} <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`
   ).join('<br>');
   el.querySelectorAll('[data-delfalta]').forEach(a=>{
     a.onclick = async (e) => {
@@ -1287,7 +1321,7 @@ function renderProfeFaltasList(pf){
 }
  
 function openProfeModal(rowIndex){
-  isNewProfe = false; currentProfeRow = rowIndex;
+  isNewProfe = false; currentProfeRow = rowIndex; pendingProfePhotoDataUrl = null;
   const pf = STATE.profes.find(p=>p.rowIndex === rowIndex);
   document.getElementById('profeModalTitle').textContent = pf.nombre;
   document.getElementById('pf_nombre').value = pf.nombre || '';
@@ -1296,18 +1330,23 @@ function openProfeModal(rowIndex){
   document.getElementById('pf_correo').value = pf.correo || '';
   document.getElementById('pf_rol').value = pf.rol || '';
   document.getElementById('pf_categoria').value = pf.categoria || '';
-  document.getElementById('pf_faltaFecha').value = '';
+  document.getElementById('pf_faltaDesde').value = '';
+  document.getElementById('pf_faltaHasta').value = '';
   document.getElementById('pf_faltaMotivo').value = '';
+  document.getElementById('pfPhotoPreview').innerHTML = profePhotoTag(pf);
+  document.getElementById('pfPhotoHint').textContent = 'JPG o PNG. Se ajusta automático.';
   document.getElementById('deleteProfeBtn').style.display = 'inline-block';
   document.getElementById('profeSaveMsg').textContent = '';
   renderProfeFaltasList(pf);
   document.getElementById('profeOverlay').classList.add('show');
 }
 function openNewProfeModal(){
-  isNewProfe = true; currentProfeRow = null;
+  isNewProfe = true; currentProfeRow = null; pendingProfePhotoDataUrl = null;
   document.getElementById('profeModalTitle').textContent = 'Nuevo profe';
-  ['pf_nombre','pf_telefono','pf_correo','pf_rol','pf_categoria','pf_faltaFecha','pf_faltaMotivo'].forEach(id=>document.getElementById(id).value='');
+  ['pf_nombre','pf_telefono','pf_correo','pf_rol','pf_categoria','pf_faltaDesde','pf_faltaHasta','pf_faltaMotivo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pf_tipo').value = 'Profe';
+  document.getElementById('pfPhotoPreview').innerHTML = JERSEY_SVG;
+  document.getElementById('pfPhotoHint').textContent = 'JPG o PNG. Se ajusta automático.';
   document.getElementById('deleteProfeBtn').style.display = 'none';
   document.getElementById('profeSaveMsg').textContent = '';
   document.getElementById('profeFaltasList').innerHTML = '';
@@ -1317,11 +1356,26 @@ document.getElementById('addProfeBtn').onclick = openNewProfeModal;
 document.getElementById('closeProfeModal').onclick = () => document.getElementById('profeOverlay').classList.remove('show');
 document.getElementById('profeOverlay').onclick = (e) => { if (e.target.id === 'profeOverlay') e.currentTarget.classList.remove('show'); };
  
+document.getElementById('pfPhotoInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('pfPhotoHint').textContent = 'Procesando...';
+  try{
+    const dataUrl = await compressImage(file, 500, 0.82);
+    pendingProfePhotoDataUrl = dataUrl;
+    document.getElementById('pfPhotoPreview').innerHTML = `<img src="${dataUrl}" alt="">`;
+    document.getElementById('pfPhotoHint').textContent = 'Se guarda al hacer clic en "Guardar".';
+  }catch(err){
+    document.getElementById('pfPhotoHint').textContent = 'No se pudo procesar la imagen.';
+  }
+});
+ 
 document.getElementById('saveProfeBtn').onclick = async () => {
   const msg = document.getElementById('profeSaveMsg');
   msg.textContent = 'Guardando...';
+  const nombre = document.getElementById('pf_nombre').value;
   const fields = {
-    nombre: document.getElementById('pf_nombre').value,
+    nombre: nombre,
     tipo: document.getElementById('pf_tipo').value,
     telefono: document.getElementById('pf_telefono').value,
     correo: document.getElementById('pf_correo').value,
@@ -1333,6 +1387,11 @@ document.getElementById('saveProfeBtn').onclick = async () => {
       ? await apiPost({ action:'addProfe', profe: fields })
       : await apiPost({ action:'updateProfe', rowIndex: currentProfeRow, fields });
     if (r.error) throw new Error(r.error);
+    if (pendingProfePhotoDataUrl && nombre){
+      msg.textContent = 'Subiendo foto...';
+      const rPhoto = await apiPost({ action:'uploadPhoto', nombre, dataUrl: pendingProfePhotoDataUrl, coleccion: 'profe' });
+      if (rPhoto.error) throw new Error('Al subir la foto: ' + rPhoto.error);
+    }
     msg.textContent = 'Guardado ✓';
     await loadAll();
     setTimeout(()=>document.getElementById('profeOverlay').classList.remove('show'), 400);
@@ -1349,17 +1408,28 @@ document.getElementById('deleteProfeBtn').onclick = async () => {
 };
  
 document.getElementById('reportarFaltaBtn').onclick = async () => {
-  const fecha = document.getElementById('pf_faltaFecha').value;
+  const desde = document.getElementById('pf_faltaDesde').value;
+  const hasta = document.getElementById('pf_faltaHasta').value;
   const motivo = document.getElementById('pf_faltaMotivo').value;
   const nombre = document.getElementById('pf_nombre').value;
-  if (!fecha){ alert('Elige una fecha primero.'); return; }
+  if (!desde){ alert('Elige al menos la fecha de inicio.'); return; }
   if (isNewProfe){ alert('Guarda primero al profe antes de registrar una falta.'); return; }
   const msg = document.getElementById('profeSaveMsg');
   msg.textContent = 'Registrando falta...';
   try{
-    const r = await apiPost({ action:'reportarFalta', profeNombre: nombre, fecha, motivo });
+    const r = await apiPost({ action:'reportarFalta', profeNombre: nombre, fechaInicio: desde, fechaFin: hasta, motivo });
     if (r.error) throw new Error(r.error);
-    msg.textContent = 'Falta registrada ✓';
+    msg.textContent = 'Falta registrada ✓ Correo enviado si hay uno configurado.';
+ 
+    // ayuda para el grupo de WhatsApp: copia el mensaje y abre el grupo (si está configurado)
+    const rango = hasta && hasta !== desde ? ('del ' + desde + ' al ' + hasta) : ('el ' + desde);
+    const texto = `Aviso: ${nombre} va a faltar ${rango}${motivo ? ' (' + motivo + ')' : ''}. — Deporte y Vida F.C.`;
+    if (STATE.whatsappGrupoLink){
+      try{ await navigator.clipboard.writeText(texto); }catch(e){ /* si el navegador no deja copiar, no pasa nada */ }
+      window.open(STATE.whatsappGrupoLink, '_blank');
+      setTimeout(()=>alert('Mensaje copiado ✓ Pégalo (mantén presionado → Pegar) en el grupo que se acaba de abrir y dale enviar.'), 300);
+    }
+ 
     await loadAll();
     openProfeModal(currentProfeRow);
   }catch(err){
@@ -1371,14 +1441,17 @@ document.getElementById('reportarFaltaBtn').onclick = async () => {
 document.getElementById('whatsappProfeBtn').onclick = () => {
   const tel = document.getElementById('pf_telefono').value.replace(/[^0-9]/g,'');
   const nombre = document.getElementById('pf_nombre').value;
-  const fecha = document.getElementById('pf_faltaFecha').value;
+  const desde = document.getElementById('pf_faltaDesde').value;
+  const hasta = document.getElementById('pf_faltaHasta').value;
   const motivo = document.getElementById('pf_faltaMotivo').value;
   if (!tel){ alert('Este profe no tiene teléfono guardado.'); return; }
-  const texto = fecha
-    ? `Hola ${nombre}, te confirmo que quedó registrada tu falta del ${fecha}${motivo ? ' (' + motivo + ')' : ''}. — Deporte y Vida F.C.`
+  const rango = desde ? (hasta && hasta !== desde ? ('del ' + desde + ' al ' + hasta) : ('el ' + desde)) : '';
+  const texto = desde
+    ? `Hola ${nombre}, te confirmo que quedó registrada tu falta ${rango}${motivo ? ' (' + motivo + ')' : ''}. — Deporte y Vida F.C.`
     : `Hola ${nombre}, te escribo de Deporte y Vida F.C.`;
   window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto), '_blank');
 };
 </script>
 </body>
 </html>
+ 
