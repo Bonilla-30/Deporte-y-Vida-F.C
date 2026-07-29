@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -561,7 +562,10 @@
       <div class="field"><label>Correo</label><input id="pf_correo" placeholder="para avisos"></div>
     </div>
     <div class="field-row single">
-      <div class="field"><label>Categoría / equipo a cargo</label><input id="pf_categoria" placeholder="Ej. CAT. 2013, Todas"></div>
+      <div class="field"><label>Categoría / equipo a cargo</label>
+        <select id="pf_categoria" multiple size="4" style="height:auto;"></select>
+        <div style="font-size:11px; color:var(--chalk-dim); margin-top:4px;">Mantén presionado Ctrl (o Cmd) para elegir varias.</div>
+      </div>
     </div>
  
     <div class="section-label">Avisar una falta</div>
@@ -1369,7 +1373,9 @@ function renderProfeFaltasList(pf){
   const sorted = [...pf.faltas].sort((a,b)=>b.fechaInicio.localeCompare(a.fechaInicio));
   el.innerHTML = 'Faltas registradas:<br>' + sorted.map(f => {
     const ok = f.estado === 'Aceptada';
-    return `${rangoFalta(f)}${f.motivo ? ' — ' + f.motivo : ''} <span style="color:${ok?'var(--accent)':'var(--amber)'}; font-weight:600;">${ok?'✓ Aceptada':'Pendiente'}</span> <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`;
+    return `${rangoFalta(f)}${f.motivo ? ' — ' + f.motivo : ''} <span style="color:${ok?'var(--accent)':'var(--amber)'}; font-weight:600;">${ok?'✓ Aceptada':'Pendiente'}</span>` +
+      (ok ? '' : ` <a href="#" data-aceptarfalta="${f.rowIndex}" style="color:var(--accent); margin-left:6px;">aceptar</a>`) +
+      ` <a href="#" data-delfalta="${f.rowIndex}" style="color:var(--red); margin-left:6px;">quitar</a>`;
   }).join('<br>');
   el.querySelectorAll('[data-delfalta]').forEach(a=>{
     a.onclick = async (e) => {
@@ -1379,6 +1385,25 @@ function renderProfeFaltasList(pf){
       openProfeModal(currentProfeRow);
     };
   });
+  el.querySelectorAll('[data-aceptarfalta]').forEach(a=>{
+    a.onclick = async (e) => {
+      e.preventDefault();
+      await apiPost({ action:'aceptarFalta', rowIndex: Number(a.dataset.aceptarfalta) });
+      await loadAll();
+      openProfeModal(currentProfeRow);
+    };
+  });
+}
+ 
+function poblarCategoriasProfe(seleccionadas){
+  const sel = document.getElementById('pf_categoria');
+  const years = [...new Set(STATE.players.map(p=>String(p.anioNacimiento)).filter(Boolean))].sort();
+  const opciones = ['Todas', ...years];
+  const yaSel = new Set(String(seleccionadas||'').split(',').map(s=>s.trim()).filter(Boolean));
+  sel.innerHTML = opciones.map(op => `<option value="${op}" ${yaSel.has(op)?'selected':''}>${op === 'Todas' ? 'Todas' : 'CAT. ' + op}</option>`).join('');
+}
+function leerCategoriasProfe(){
+  return [...document.getElementById('pf_categoria').selectedOptions].map(o=>o.value).join(', ');
 }
  
 function openProfeModal(rowIndex){
@@ -1390,7 +1415,7 @@ function openProfeModal(rowIndex){
   document.getElementById('pf_telefono').value = pf.telefono || '';
   document.getElementById('pf_correo').value = pf.correo || '';
   document.getElementById('pf_rol').value = pf.rol || '';
-  document.getElementById('pf_categoria').value = pf.categoria || '';
+  poblarCategoriasProfe(pf.categoria);
   document.getElementById('pf_faltaDesde').value = '';
   document.getElementById('pf_faltaHasta').value = '';
   document.getElementById('pf_faltaMotivo').value = '';
@@ -1404,7 +1429,8 @@ function openProfeModal(rowIndex){
 function openNewProfeModal(){
   isNewProfe = true; currentProfeRow = null; pendingProfePhotoDataUrl = null;
   document.getElementById('profeModalTitle').textContent = 'Nuevo profe';
-  ['pf_nombre','pf_telefono','pf_correo','pf_rol','pf_categoria','pf_faltaDesde','pf_faltaHasta','pf_faltaMotivo'].forEach(id=>document.getElementById(id).value='');
+  ['pf_nombre','pf_telefono','pf_correo','pf_rol','pf_faltaDesde','pf_faltaHasta','pf_faltaMotivo'].forEach(id=>document.getElementById(id).value='');
+  poblarCategoriasProfe('');
   document.getElementById('pf_tipo').value = 'Profe';
   document.getElementById('pfPhotoPreview').innerHTML = JERSEY_SVG;
   document.getElementById('pfPhotoHint').textContent = 'JPG o PNG. Se ajusta automático.';
@@ -1441,7 +1467,7 @@ document.getElementById('saveProfeBtn').onclick = async () => {
     telefono: document.getElementById('pf_telefono').value,
     correo: document.getElementById('pf_correo').value,
     rol: document.getElementById('pf_rol').value,
-    categoria: document.getElementById('pf_categoria').value
+    categoria: leerCategoriasProfe()
   };
   try{
     const r = isNewProfe
@@ -1607,3 +1633,4 @@ document.getElementById('saveEventoBtn').onclick = async () => {
 </script>
 </body>
 </html>
+ 
