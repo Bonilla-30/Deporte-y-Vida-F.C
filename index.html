@@ -498,6 +498,10 @@
       <span class="save-msg" id="settingsMsg"></span>
       <button class="btn btn-primary" id="settingsSaveBtn">Guardar y reconectar</button>
     </div>
+ 
+    <div style="border-top:1px solid var(--pitch-line); margin-top:18px; padding-top:14px;">
+      <button class="btn btn-ghost" id="cerrarSesionGateBtn" style="width:100%; color:var(--red); border-color:var(--red);">Cerrar sesión de este navegador</button>
+    </div>
   </div>
 </div>
  
@@ -667,6 +671,12 @@
     <div class="section-label">Pagos (registro y uniforme)</div>
     <div class="doc-grid" id="payGrid"></div>
  
+    <div class="section-label">Equipo (asignado por Directiva)</div>
+    <div class="field-row single">
+      <div class="field"><input id="f_equipo" placeholder="Ej. Equipo A, Equipo Rojo" list="equiposDatalist"></div>
+    </div>
+    <datalist id="equiposDatalist"></datalist>
+ 
     <div class="section-label">Estado</div>
     <div class="field-row">
       <div class="field"><label>Fecha de registro</label><input type="date" id="f_fechaRegistro"></div>
@@ -686,12 +696,25 @@
  
 <script>
 const TEAM_PASSWORD = 'vidayfut26'; // <-- cambia esta contraseña por la que quieras
+const GATE_SESSION_KEY = 'dyv_admin_session'; // recuerda que ya entraste, en este navegador, hasta que cierres sesión
  
 document.getElementById('gateLogo').src = document.querySelector('.crest-badge img').src;
+ 
+function guardarSesionGate(){ try{ localStorage.setItem(GATE_SESSION_KEY, 'ok'); }catch(e){ /* si el navegador bloquea localStorage, simplemente pedirá contraseña cada vez */ } }
+function haySesionGate(){ try{ return localStorage.getItem(GATE_SESSION_KEY) === 'ok'; }catch(e){ return false; } }
+function cerrarSesionGate(){
+  try{ localStorage.removeItem(GATE_SESSION_KEY); }catch(e){ /* nada que hacer */ }
+  location.reload();
+}
+ 
+if (haySesionGate()){
+  document.getElementById('gateOverlay').style.display = 'none';
+}
  
 function checkGatePassword(){
   const val = document.getElementById('gatePassword').value;
   if (val === TEAM_PASSWORD){
+    guardarSesionGate();
     document.getElementById('gateOverlay').style.display = 'none';
   } else {
     document.getElementById('gateError').style.display = 'block';
@@ -711,7 +734,7 @@ function matchesSearch(p){
   const q = searchQuery.toLowerCase();
   return String(p.nombre||'').toLowerCase().includes(q) || String(p.numero||'').toLowerCase().includes(q);
 }
-let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {}, uniformeCosto: 500, profes: [], correoAdmin: '', whatsappGrupoLink: '', eventos: [] };
+let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {}, uniformeCosto: 500, profes: [], correoAdmin: '', whatsappGrupoLink: '', eventos: [], equiposList: [] };
 let currentPlayerRow = null;
 let isNewPlayer = false;
 let pendingAttendance = {};
@@ -751,6 +774,9 @@ document.getElementById('gearBtn').onclick = () => {
 };
 document.getElementById('closeSettings').onclick = () => document.getElementById('settingsOverlay').classList.remove('show');
 document.getElementById('settingsOverlay').onclick = (e) => { if (e.target.id === 'settingsOverlay') e.currentTarget.classList.remove('show'); };
+document.getElementById('cerrarSesionGateBtn').onclick = () => {
+  if (confirm('¿Cerrar sesión en este navegador? La próxima vez que entres va a pedir la contraseña del equipo otra vez.')) cerrarSesionGate();
+};
 document.getElementById('settingsSaveBtn').onclick = () => {
   const val = document.getElementById('settingsUrlInput').value.trim();
   if (!val) return;
@@ -1138,6 +1164,9 @@ document.getElementById('avisosSaveBtn').onclick = async () => {
 };
  
 // ---------- PLAYER MODAL (datos básicos + foto) ----------
+function poblarEquiposDatalist(){
+  document.getElementById('equiposDatalist').innerHTML = (STATE.equiposList||[]).map(e=>`<option value="${e}">`).join('');
+}
 function openPlayerModal(rowIndex){
   isNewPlayer = false; currentPlayerRow = rowIndex; pendingPhotoDataUrl = null;
   const p = STATE.players.find(pl=>pl.rowIndex === rowIndex);
@@ -1151,6 +1180,8 @@ function openPlayerModal(rowIndex){
   document.getElementById('f_telTutor').value = p.telTutor || '';
   document.getElementById('f_baja').checked = !!p.baja;
   document.getElementById('f_fechaRegistro').value = p.fechaRegistro || '';
+  poblarEquiposDatalist();
+  document.getElementById('f_equipo').value = p.equipo || '';
   document.getElementById('photoPreview').innerHTML = photoTag(p);
   renderDocGrid(p.documentacion || {});
   renderPayGrid(p.pagos || {});
@@ -1161,8 +1192,9 @@ function openPlayerModal(rowIndex){
 function openNewPlayerModal(){
   isNewPlayer = true; currentPlayerRow = null; pendingPhotoDataUrl = null;
   document.getElementById('modalTitle').textContent = 'Nuevo jugador';
-  ['f_numero','f_posicion','f_nombre','f_anio','f_telJugador','f_nombreTutor','f_telTutor','f_fechaRegistro'].forEach(id=>document.getElementById(id).value='');
+  ['f_numero','f_posicion','f_nombre','f_anio','f_telJugador','f_nombreTutor','f_telTutor','f_fechaRegistro','f_equipo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_baja').checked = false;
+  poblarEquiposDatalist();
   document.getElementById('photoPreview').innerHTML = JERSEY_SVG;
   renderDocGrid({});
   renderPayGrid({});
@@ -1236,6 +1268,7 @@ document.getElementById('saveBtn').onclick = async () => {
   document.querySelectorAll('#payGrid input[type=checkbox]').forEach(cb=>{ fields['doc:' + cb.dataset.pay] = cb.checked; });
   const bajaChecked = document.getElementById('f_baja').checked;
   const fechaRegistro = document.getElementById('f_fechaRegistro').value;
+  const equipo = document.getElementById('f_equipo').value;
  
   try{
     if (isNewPlayer){
@@ -1250,6 +1283,8 @@ document.getElementById('saveBtn').onclick = async () => {
       if (r1.error) throw new Error('Al guardar estado: ' + r1.error);
       const r2 = await apiPost({ action:'setFechaRegistro', nombre, fecha: fechaRegistro });
       if (r2.error) throw new Error('Al guardar fecha: ' + r2.error);
+      const r3 = await apiPost({ action:'setEquipoJugador', nombre, equipo });
+      if (r3.error) throw new Error('Al guardar equipo: ' + r3.error);
     }
     if (pendingPhotoDataUrl && nombre){
       msg.textContent = 'Subiendo foto...';
@@ -1437,9 +1472,14 @@ function renderProfeFaltasList(pf){
 function poblarCategoriasProfe(seleccionadas){
   const sel = document.getElementById('pf_categoria');
   const years = [...new Set(STATE.players.map(p=>String(p.anioNacimiento)).filter(Boolean))].sort();
-  const opciones = ['Todas', ...years];
+  const equiposOpts = STATE.equiposList || [];
+  const opciones = ['Todas', ...equiposOpts, ...years];
   const yaSel = new Set(String(seleccionadas||'').split(',').map(s=>s.trim()).filter(Boolean));
-  sel.innerHTML = opciones.map(op => `<option value="${op}" ${yaSel.has(op)?'selected':''}>${op === 'Todas' ? 'Todas' : 'CAT. ' + op}</option>`).join('');
+  sel.innerHTML = opciones.map(op => {
+    const esAnio = years.includes(op);
+    const label = op === 'Todas' ? 'Todas' : (esAnio ? 'CAT. ' + op : '🏆 ' + op);
+    return `<option value="${op}" ${yaSel.has(op)?'selected':''}>${label}</option>`;
+  }).join('');
 }
 function leerCategoriasProfe(){
   return [...document.getElementById('pf_categoria').selectedOptions].map(o=>o.value).join(', ');
@@ -1681,7 +1721,7 @@ document.getElementById('saveEventoBtn').onclick = async () => {
   }
 };
  
-// ---------- FICHA DEL PARTIDO (Directiva: alineación + convocatoria, uniendo cualquier categoría) ----------
+// ---------- FICHA DEL PARTIDO (Directiva: alineación + convocatoria + estadísticas, uniendo cualquier categoría) ----------
 const FORMATIONS_ADMIN = {
   '4-3-3': { DEL:3, MED:3, DEF:4 },
   '4-4-2': { DEL:2, MED:4, DEF:4 },
@@ -1691,14 +1731,18 @@ const FORMATIONS_ADMIN = {
 };
 let fichaPartidoEvento = null;
 let fichaAsignaciones = {};
-let fichaConvocados = new Set();
+let fichaStats = {}; // { nombre: { convocado, jugo, goles } }
  
 function abrirFichaPartido(rowIndex){
   const ev = STATE.eventos.find(e=>e.rowIndex===rowIndex);
   if (!ev) return;
   fichaPartidoEvento = ev;
   document.getElementById('fichaPartidoTitle').textContent = ev.titulo + ' — ' + ev.fecha;
-  fichaConvocados = new Set(ev.convocatoria ? ev.convocatoria.jugadores : []);
+  fichaStats = {};
+  (ev.convocatoria ? ev.convocatoria.jugadores : []).forEach(j=>{
+    if (typeof j === 'string') fichaStats[j] = { convocado:true, jugo:false, goles:0 };
+    else fichaStats[j.nombre] = { convocado:true, jugo: !!j.jugo, goles: Number(j.goles)||0 };
+  });
   fichaAsignaciones = ev.formacion ? {...ev.formacion.asignaciones} : {};
   document.getElementById('fp_formacionSelect').value = (ev.formacion && FORMATIONS_ADMIN[ev.formacion.formacion]) ? ev.formacion.formacion : '4-3-3';
   renderConvocatoriaList();
@@ -1712,19 +1756,45 @@ document.getElementById('fichaPartidoOverlay').onclick = (e) => { if (e.target.i
 function renderConvocatoriaList(){
   const el = document.getElementById('convocatoriaList');
   const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
-  el.innerHTML = activos.map(p=>`
-    <label class="convocado-check">
-      <input type="checkbox" data-convocado="${p.nombre.replace(/"/g,'&quot;')}" ${fichaConvocados.has(p.nombre)?'checked':''}>
-      #${p.numero||'--'} ${p.nombre} <span style="color:var(--chalk-dim);">(${p.posicion||'—'} · ${p.anioNacimiento||'—'})</span>
-    </label>`).join('');
+  el.innerHTML = `<button type="button" class="btn btn-ghost" id="convocarTodosBtn" style="margin-bottom:10px; padding:6px 12px; font-size:12px;">Marcar a todos como convocados</button>` +
+    activos.map(p=>{
+    const st = fichaStats[p.nombre] || { convocado:false, jugo:false, goles:0 };
+    const nombreAttr = p.nombre.replace(/"/g,'&quot;');
+    return `
+    <div style="border-bottom:1px solid rgba(255,255,255,0.06); padding:6px 0;">
+      <label class="convocado-check">
+        <input type="checkbox" data-convocado="${nombreAttr}" ${st.convocado?'checked':''}>
+        #${p.numero||'--'} ${p.nombre} <span style="color:var(--chalk-dim);">(${p.posicion||'—'} · ${p.anioNacimiento||'—'})</span>
+      </label>
+      <div data-statsrow="${nombreAttr}" style="display:${st.convocado?'flex':'none'}; align-items:center; gap:14px; margin:6px 0 0 24px; font-size:12px;">
+        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" data-jugo="${nombreAttr}" ${st.jugo?'checked':''}> Jugó</label>
+        <label style="display:flex; align-items:center; gap:5px;">Goles <input type="number" min="0" data-goles="${nombreAttr}" value="${st.goles||0}" style="width:50px; background:var(--pitch-dark); border:1px solid var(--pitch-line); color:var(--chalk); border-radius:4px; padding:3px 5px;"></label>
+      </div>
+    </div>`;
+  }).join('');
+ 
+  document.getElementById('convocarTodosBtn').onclick = () => {
+    activos.forEach(p=>{ if (!fichaStats[p.nombre]) fichaStats[p.nombre] = { convocado:true, jugo:false, goles:0 }; else fichaStats[p.nombre].convocado = true; });
+    renderConvocatoriaList();
+    buildFichaPitch();
+  };
   el.querySelectorAll('[data-convocado]').forEach(cb=>{
     cb.onchange = () => {
-      if (cb.checked) fichaConvocados.add(cb.dataset.convocado); else fichaConvocados.delete(cb.dataset.convocado);
-      document.getElementById('convocatoriaCount').textContent = fichaConvocados.size + ' jugador(es) convocado(s)';
-      buildFichaPitch(); // refresca las opciones del selector de alineación
+      const nombre = cb.dataset.convocado;
+      if (!fichaStats[nombre]) fichaStats[nombre] = { convocado:false, jugo:false, goles:0 };
+      fichaStats[nombre].convocado = cb.checked;
+      el.querySelector(`[data-statsrow="${nombre.replace(/"/g,'\\"')}"]`).style.display = cb.checked ? 'flex' : 'none';
+      document.getElementById('convocatoriaCount').textContent = Object.values(fichaStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
+      buildFichaPitch();
     };
   });
-  document.getElementById('convocatoriaCount').textContent = fichaConvocados.size + ' jugador(es) convocado(s)';
+  el.querySelectorAll('[data-jugo]').forEach(cb=>{
+    cb.onchange = () => { fichaStats[cb.dataset.jugo].jugo = cb.checked; };
+  });
+  el.querySelectorAll('[data-goles]').forEach(inp=>{
+    inp.onchange = () => { fichaStats[inp.dataset.goles].goles = Number(inp.value)||0; };
+  });
+  document.getElementById('convocatoriaCount').textContent = Object.values(fichaStats).filter(s=>s.convocado).length + ' jugador(es) convocado(s)';
 }
  
 document.getElementById('fp_formacionSelect').addEventListener('change', buildFichaPitch);
@@ -1732,7 +1802,7 @@ document.getElementById('fp_formacionSelect').addEventListener('change', buildFi
 function buildFichaPitch(){
   const key = document.getElementById('fp_formacionSelect').value;
   const conf = FORMATIONS_ADMIN[key];
-  const disponibles = STATE.players.filter(p => fichaConvocados.has(p.nombre));
+  const disponibles = STATE.players.filter(p => fichaStats[p.nombre] && fichaStats[p.nombre].convocado);
   const opciones = '<option value="">—</option>' + disponibles.map(p=>`<option value="${p.nombre.replace(/"/g,'&quot;')}">${p.nombre}</option>`).join('');
  
   const buildLine = (prefix, count, label) => {
@@ -1762,8 +1832,9 @@ document.getElementById('guardarFichaPartidoBtn').onclick = async () => {
   const formKey = document.getElementById('fp_formacionSelect').value;
   const asignaciones = {};
   document.querySelectorAll('#fp_pitchContainer select').forEach(sel=>{ if (sel.value) asignaciones[sel.dataset.slot] = sel.value; });
+  const jugadores = Object.keys(fichaStats).filter(n=>fichaStats[n].convocado).map(n=>({ nombre:n, jugo: fichaStats[n].jugo, goles: fichaStats[n].goles }));
   try{
-    await apiPost({ action:'guardarConvocatoria', eventoId: fichaPartidoEvento.rowIndex, profeNombre: 'Directiva', jugadores: Array.from(fichaConvocados) });
+    await apiPost({ action:'guardarConvocatoria', eventoId: fichaPartidoEvento.rowIndex, profeNombre: 'Directiva', jugadores });
     await apiPost({ action:'guardarFormacion', eventoId: fichaPartidoEvento.rowIndex, formacion: formKey, asignaciones, creadoPor: 'Directiva' });
     msg.textContent = 'Guardado ✓';
     await loadAll();
