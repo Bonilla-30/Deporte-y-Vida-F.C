@@ -603,7 +603,8 @@ function attendancePct(p){
 }
 function photoTag(p, size){
   const url = STATE.photos && STATE.photos[p.nombre];
-  return url ? `<img src="${url}" alt="">` : JERSEY_SVG;
+  const fallback = JERSEY_SVG.replace(/"/g, '&quot;');
+  return url ? `<img src="${url}" alt="" onerror="this.outerHTML='${fallback}';">` : JERSEY_SVG;
 }
  
 // ---------- ROSTER ----------
