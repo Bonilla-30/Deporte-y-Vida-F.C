@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -30,7 +30,7 @@
     min-height:100vh;
   }
   ::selection{background:var(--accent);color:var(--pitch-dark);}
-
+ 
   .field-bg{
     position:fixed; inset:0; z-index:-1; pointer-events:none;
     background:
@@ -38,12 +38,12 @@
       repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 90px),
       var(--pitch-dark);
   }
-
+ 
   a{color:var(--accent);}
   button{font-family:inherit;}
-
+ 
   .wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px;}
-
+ 
   /* HEADER */
   header.top{
     border-bottom:1px solid var(--pitch-line);
@@ -69,7 +69,7 @@
     text-transform:uppercase;
   }
   .crest .sub{font-size:12px; color:var(--chalk-dim); letter-spacing:1.5px; text-transform:uppercase; margin-top:4px;}
-
+ 
   .top-right{display:flex; align-items:center; gap:12px;}
   .search-box{
     display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--pitch-line);
@@ -88,7 +88,7 @@
     letter-spacing:0.3px; white-space:nowrap;
   }
   .tab-btn.active{background:var(--accent); color:var(--pitch-dark);}
-
+ 
   .gear-btn{
     width:34px; height:34px; border-radius:50%; border:1px solid var(--pitch-line);
     background:var(--pitch); color:var(--chalk-dim); cursor:pointer; font-size:15px;
@@ -100,7 +100,7 @@
   }
   .dot{width:7px;height:7px;border-radius:50%;background:var(--red); display:inline-block;}
   .dot.ok{background:var(--green-ok);}
-
+ 
   /* FILTER BAR */
   .filterbar{
     display:flex; align-items:center; gap:22px; flex-wrap:wrap;
@@ -121,7 +121,7 @@
     padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13.5px;
   }
   .add-btn:hover{filter:brightness(1.08);}
-
+ 
   /* GROUP SECTIONS */
   .group-title{display:flex; align-items:baseline; gap:12px; margin:34px 0 16px;}
   .group-title h2{
@@ -130,9 +130,9 @@
   }
   .group-title .count{font-size:12px; color:var(--chalk-dim);}
   .group-title::after{content:''; flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--pitch-line) 0 6px, transparent 6px 12px);}
-
+ 
   .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px;}
-
+ 
   /* PLAYER CARD */
   .pcard{
     background:var(--card); border:1px solid var(--pitch-line); border-radius:var(--radius);
@@ -161,10 +161,10 @@
   .meta-dot.ok{background:var(--green-ok);}
   .meta-dot.bad{background:var(--red);}
   .meta-dot.mid{background:var(--amber);}
-
+ 
   .empty-state{text-align:center; padding:60px 20px; color:var(--chalk-dim); font-size:14px;}
   .empty-state b{color:var(--chalk);}
-
+ 
   /* MODAL */
   .overlay{
     position:fixed; inset:0; background:rgba(5,15,11,0.75); backdrop-filter:blur(3px);
@@ -180,7 +180,7 @@
   .modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
   .modal-head h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; text-transform:uppercase; margin:0; color:var(--accent);}
   .close-x{background:none; border:none; color:var(--chalk-dim); font-size:22px; cursor:pointer; line-height:1;}
-
+ 
   .photo-row{display:flex; align-items:center; gap:16px; margin-bottom:20px;}
   .photo-big{
     width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--card);
@@ -195,7 +195,7 @@
   .photo-actions label.upload-btn:hover{border-color:var(--accent-dim);}
   .photo-actions input[type=file]{display:none;}
   .photo-hint{font-size:11px; color:var(--chalk-dim); margin-top:6px;}
-
+ 
   .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
   .field-row.single{grid-template-columns:1fr;}
   .field label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--chalk-dim); margin-bottom:5px;}
@@ -204,7 +204,7 @@
     padding:9px 10px; border-radius:6px; font-size:13.5px; font-family:'Inter',sans-serif;
   }
   .field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:1px;}
-
+ 
   .section-label{
     font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--accent);
     margin:20px 0 10px; font-weight:700;
@@ -215,7 +215,7 @@
     padding:8px 10px; border-radius:6px; font-size:13px; cursor:pointer;
   }
   .doc-check input{width:16px; height:16px; accent-color:var(--accent);}
-
+ 
   .modal-actions{display:flex; gap:10px; margin-top:22px; justify-content:space-between; align-items:center;}
   .btn{border:none; padding:10px 18px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13.5px;}
   .btn-primary{background:var(--accent); color:var(--pitch-dark);}
@@ -223,7 +223,7 @@
   .btn-ghost{background:transparent; border:1px solid var(--pitch-line); color:var(--chalk-dim);}
   .btn-danger{background:transparent; border:1px solid var(--red); color:var(--red);}
   .save-msg{font-size:12px; color:var(--green-ok);}
-
+ 
   /* TABLE VIEWS (Documentación / Pagos) */
   .tbl-wrap{overflow-x:auto; border:1px solid var(--pitch-line); border-radius:10px;}
   table.datatbl{width:100%; border-collapse:collapse; min-width:640px;}
@@ -243,7 +243,7 @@
   .complete-tag{font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px;}
   .complete-tag.ok{background:rgba(79,201,62,0.18); color:var(--green-ok);}
   .complete-tag.bad{background:rgba(229,86,77,0.18); color:var(--red);}
-
+ 
   /* ATTENDANCE VIEW */
   .att-toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:20px;}
   .att-toolbar input[type=date]{
@@ -256,10 +256,10 @@
   .toggle button.on-absent{background:var(--red); color:var(--pitch-dark);}
   .pct-bar-wrap{width:70px; height:6px; background:var(--card); border-radius:4px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px;}
   .pct-bar{height:100%; background:var(--accent);}
-
+ 
   .loading, .err{padding:40px; text-align:center; color:var(--chalk-dim);}
   .err{color:var(--red);}
-
+ 
   /* SETUP SCREEN (first connection only) */
   .setup-screen{
     max-width:460px; margin:80px auto; background:var(--card); border:1px solid var(--pitch-line);
@@ -272,7 +272,7 @@
     padding:10px 12px; border-radius:6px; font-size:13px; font-family:monospace; margin:14px 0;
   }
   .setup-screen .err{padding:8px; font-size:12.5px;}
-
+ 
   @media(max-width:640px){
     .field-row{grid-template-columns:1fr;}
     .doc-grid{grid-template-columns:1fr;}
@@ -285,7 +285,7 @@
 </head>
 <body>
 <div class="field-bg"></div>
-
+ 
 <!-- CANDADO DE ACCESO (solo para desalentar visitas no autorizadas, no es seguridad de nivel bancario) -->
 <div id="gateOverlay" style="position:fixed; inset:0; background:var(--pitch-dark); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;">
   <div style="max-width:360px; width:100%; background:var(--card); border:1px solid var(--pitch-line); border-radius:14px; padding:32px; text-align:center;">
@@ -299,7 +299,7 @@
     <div id="gateError" style="color:var(--red); font-size:12px; margin-top:10px; display:none;">Contraseña incorrecta.</div>
   </div>
 </div>
-
+ 
 <header class="top">
   <div class="top-inner">
     <div class="crest">
@@ -324,9 +324,9 @@
     </div>
   </div>
 </header>
-
+ 
 <div class="wrap">
-
+ 
   <!-- SETUP (solo se muestra si no hay conexión configurada) -->
   <div id="setupScreen" class="setup-screen" style="display:none;">
     <h2>Conecta tu hoja de cálculo</h2>
@@ -335,7 +335,7 @@
     <button class="btn btn-primary" id="setupConnectBtn" style="width:100%;">Conectar</button>
     <div class="err" id="setupErr" style="display:none;"></div>
   </div>
-
+ 
   <!-- ROSTER VIEW -->
   <div id="rosterView" style="display:none;">
     <div class="filterbar">
@@ -354,7 +354,7 @@
     </div>
     <div id="rosterContent"></div>
   </div>
-
+ 
   <!-- DOCUMENTACIÓN VIEW -->
   <div id="docsView" style="display:none;">
     <div class="filterbar">
@@ -366,7 +366,7 @@
     </div>
     <div id="docsContent"></div>
   </div>
-
+ 
   <!-- PAGOS VIEW -->
   <div id="pagosView" style="display:none;">
     <div class="filterbar">
@@ -375,7 +375,7 @@
     </div>
     <div id="pagosContent"></div>
   </div>
-
+ 
   <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" style="display:none;">
     <div class="att-toolbar">
@@ -386,9 +386,9 @@
     </div>
     <div id="attendanceContent"></div>
   </div>
-
+ 
 </div>
-
+ 
 <!-- SETTINGS MODAL (conexión, oculta por defecto) -->
 <div class="overlay" id="settingsOverlay">
   <div class="modal narrow">
@@ -404,7 +404,7 @@
     </div>
   </div>
 </div>
-
+ 
 <!-- PLAYER MODAL -->
 <div class="overlay" id="playerOverlay">
   <div class="modal">
@@ -412,7 +412,7 @@
       <h3 id="modalTitle">Jugador</h3>
       <button class="close-x" id="closeModal">&times;</button>
     </div>
-
+ 
     <div class="photo-row">
       <div class="photo-big" id="photoPreview"></div>
       <div class="photo-actions">
@@ -420,7 +420,7 @@
         <div class="photo-hint" id="photoHint">JPG o PNG. Se ajusta automático.</div>
       </div>
     </div>
-
+ 
     <div class="field-row">
       <div class="field"><label>Número</label><input id="f_numero"></div>
       <div class="field"><label>Posición</label><input id="f_posicion" placeholder="Ej. MED, DEL, POR"></div>
@@ -436,13 +436,13 @@
       <div class="field"><label>Nombre del tutor</label><input id="f_nombreTutor"></div>
       <div class="field"><label>Teléfono tutor</label><input id="f_telTutor"></div>
     </div>
-
+ 
     <div class="section-label">Documentación</div>
     <div class="doc-grid" id="docGrid"></div>
-
+ 
     <div class="section-label">Pagos (registro y uniforme)</div>
     <div class="doc-grid" id="payGrid"></div>
-
+ 
     <div class="section-label">Estado</div>
     <div class="field-row">
       <div class="field"><label>Fecha de registro</label><input type="date" id="f_fechaRegistro"></div>
@@ -451,7 +451,7 @@
         Dado de baja
       </label>
     </div>
-
+ 
     <div class="modal-actions">
       <button class="btn btn-danger" id="deleteBtn">Eliminar</button>
       <span class="save-msg" id="modalSaveMsg"></span>
@@ -459,12 +459,12 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
 const TEAM_PASSWORD = 'vidayfut26'; // <-- cambia esta contraseña por la que quieras
-
+ 
 document.getElementById('gateLogo').src = document.querySelector('.crest-badge img').src;
-
+ 
 function checkGatePassword(){
   const val = document.getElementById('gatePassword').value;
   if (val === TEAM_PASSWORD){
@@ -475,9 +475,9 @@ function checkGatePassword(){
 }
 document.getElementById('gateSubmit').onclick = checkGatePassword;
 document.getElementById('gatePassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkGatePassword(); });
-
+ 
 const JERSEY_SVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3L2 7l3 3 2-1.5V21h10V8.5L19 10l3-3-5-4-2 2h-6L7 3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>';
-
+ 
 let API_URL = '';
 let searchQuery = '';
 function matchesSearch(p){
@@ -490,15 +490,15 @@ let currentPlayerRow = null;
 let isNewPlayer = false;
 let pendingAttendance = {};
 let pendingPhotoDataUrl = null;
-
+ 
 document.getElementById('photoPreview').innerHTML = JERSEY_SVG;
-
+ 
 // ---------- connection ----------
 function tryConnect(url, onErr){
   API_URL = url.trim();
   loadAll(onErr);
 }
-
+ 
 document.getElementById('setupConnectBtn').onclick = () => {
   const val = document.getElementById('setupUrlInput').value.trim();
   if (!val) return;
@@ -508,12 +508,12 @@ document.getElementById('setupConnectBtn').onclick = () => {
     document.getElementById('setupErr').style.display = 'block';
   });
 };
-
+ 
 document.getElementById('searchInput').addEventListener('input', (e) => {
   searchQuery = e.target.value.trim();
   renderRoster(); renderDocs(); renderPagos(); renderAttendance();
 });
-
+ 
 document.getElementById('gearBtn').onclick = () => {
   document.getElementById('settingsUrlInput').value = API_URL;
   refreshSettingsStatus();
@@ -531,7 +531,7 @@ function refreshSettingsStatus(){
   document.getElementById('settingsDot').className = 'dot' + (API_URL ? ' ok' : '');
   document.getElementById('settingsStatus').textContent = API_URL ? (STATE.players.length + ' jugadores cargados') : 'Sin conectar';
 }
-
+ 
 async function apiGet(){
   const res = await fetch(API_URL + '?action=getAll');
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -541,7 +541,7 @@ async function apiPost(payload){
   const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
   return res.json();
 }
-
+ 
 async function loadAll(onErr){
   try{
     const data = await apiGet();
@@ -558,10 +558,10 @@ async function loadAll(onErr){
     else { document.getElementById('setupScreen').style.display = 'block'; document.getElementById('rosterView').style.display = 'none'; }
   }
 }
-
+ 
 // primer arranque: no hay URL guardada, mostramos pantalla de configuración una sola vez
 document.getElementById('setupScreen').style.display = 'block';
-
+ 
 function populateFilters(){
   const posSet = new Set();
   STATE.players.forEach(p => getPositionTags(p).forEach(tag => posSet.add(tag)));
@@ -571,12 +571,12 @@ function populateFilters(){
   ['filterPos','docFilterPos','payFilterPos'].forEach(id=>document.getElementById(id).innerHTML = posOpts);
   ['filterYear','docFilterYear','payFilterYear'].forEach(id=>document.getElementById(id).innerHTML = yearOpts);
 }
-
+ 
 // un jugador puede tener varias posiciones escritas como "LAT/VOL/MED" — esto las separa
 function getPositionTags(p){
   return String(p.posicion||'').split(/[\/,]+/).map(s=>s.trim()).filter(Boolean);
 }
-
+ 
 // ---------- helpers ----------
 function isDocComplete(p){
   if (!STATE.docColumnNames.length) return false;
@@ -605,7 +605,7 @@ function photoTag(p, size){
   const url = STATE.photos && STATE.photos[p.nombre];
   return url ? `<img src="${url}" alt="">` : JERSEY_SVG;
 }
-
+ 
 // ---------- ROSTER ----------
 function renderRoster(){
   const groupBy = document.getElementById('groupBy').value;
@@ -614,7 +614,7 @@ function renderRoster(){
   const fState = document.getElementById('filterState').value;
   const fRegFrom = document.getElementById('filterRegFrom').value;
   const fRegTo = document.getElementById('filterRegTo').value;
-
+ 
   let players = STATE.players.filter(p=>{
     if (fPos && !getPositionTags(p).includes(fPos)) return false;
     if (fYear && String(p.anioNacimiento) !== fYear) return false;
@@ -625,16 +625,16 @@ function renderRoster(){
     if (!matchesSearch(p)) return false;
     return true;
   });
-
+ 
   const el = document.getElementById('rosterContent');
   if (!players.length){
     el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b><br>Ajusta los filtros o agrega un jugador nuevo.</div>';
     return;
   }
-
+ 
   const activePlayers = fState === 'bajas' ? [] : players.filter(p=>!p.baja);
   const bajaPlayers = fState === 'activos' ? [] : players.filter(p=>p.baja);
-
+ 
   const groups = {};
   activePlayers.forEach(p=>{
     if (groupBy === 'anio'){
@@ -650,23 +650,23 @@ function renderRoster(){
     }
   });
   const sortedKeys = Object.keys(groups).sort((a,b)=> groupBy==='anio' ? b-a : String(a).localeCompare(String(b)));
-
+ 
   let html = sortedKeys.map(key=>{
     const label = groupBy === 'anio' ? `Categoría ${key}` : key;
     const cards = groups[key].sort((a,b)=>(a.numero||999)-(b.numero||999)).map(p=>cardHtml(p)).join('');
     return `<div class="group-title"><h2>${label}</h2><span class="count">${groups[key].length} jugador${groups[key].length!==1?'es':''}</span></div><div class="grid">${cards}</div>`;
   }).join('');
-
+ 
   if (bajaPlayers.length){
     const cards = bajaPlayers.sort((a,b)=>(a.numero||999)-(b.numero||999)).map(p=>cardHtml(p)).join('');
     html += `<div class="group-title"><h2 style="color:var(--red);">Dados de baja</h2><span class="count">${bajaPlayers.length} jugador${bajaPlayers.length!==1?'es':''}</span></div><div class="grid">${cards}</div>`;
   }
-
+ 
   if (!html) html = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>';
   el.innerHTML = html;
   el.querySelectorAll('.pcard').forEach(card=>{ card.onclick = () => openPlayerModal(Number(card.dataset.row)); });
 }
-
+ 
 function cardHtml(p){
   const docsOk = isDocComplete(p);
   const filled = docsFilled(p);
@@ -691,7 +691,7 @@ function cardHtml(p){
     </div>`;
 }
 ['groupBy','filterPos','filterYear','filterState','filterRegFrom','filterRegTo'].forEach(id=>document.getElementById(id).addEventListener('change', renderRoster));
-
+ 
 // ---------- DOCUMENTACIÓN TAB ----------
 function renderDocs(){
   const fPos = document.getElementById('docFilterPos').value;
@@ -705,17 +705,19 @@ function renderDocs(){
     if (!matchesSearch(p)) return false;
     return true;
   }).sort((a,b)=>(a.numero||999)-(b.numero||999));
-
+ 
   const el = document.getElementById('docsContent');
   if (!players.length){ el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>'; return; }
   const docNames = STATE.docColumnNames;
-
-  const rows = players.map(p=>{
+  const activePlayers = players.filter(p=>!p.baja);
+  const bajaPlayers = players.filter(p=>p.baja);
+ 
+  const buildRow = (p) => {
     const pct = attendancePct(p);
     return `
     <tr data-row="${p.rowIndex}">
+      <td${p.baja ? ' style="color:var(--red);"' : ''}>${p.nombre}${p.baja ? ' (baja)' : ''}</td>
       <td>#${p.numero||'--'}</td>
-      <td>${p.nombre}</td>
       <td>${p.anioNacimiento||'—'}</td>
       <td>${p.posicion||'—'}</td>
       ${docNames.map(name=>`<td style="text-align:center;"><input type="checkbox" data-doc="${name}" ${p.documentacion[name]?'checked':''}></td>`).join('')}
@@ -723,12 +725,22 @@ function renderDocs(){
       <td>${pct!==null ? pct+'% asist.' : '—'}</td>
       <td class="row-save-msg"></td>
     </tr>`;
-  }).join('');
-
-  el.innerHTML = `<div class="tbl-wrap"><table class="datatbl">
-    <thead><tr><th>#</th><th>Nombre</th><th>Año</th><th>Posición</th>${docNames.map(n=>`<th>${n}</th>`).join('')}<th>Estado</th><th>Asistencia</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-
+  };
+  const theadHtml = `<thead><tr><th>Nombre</th><th>#</th><th>Año</th><th>Posición</th>${docNames.map(n=>`<th>${n}</th>`).join('')}<th>Estado</th><th>Asistencia</th><th></th></tr></thead>`;
+ 
+  let html = activePlayers.length
+    ? `<div class="tbl-wrap"><table class="datatbl">${theadHtml}<tbody>${activePlayers.map(buildRow).join('')}</tbody></table></div>`
+    : '<div class="empty-state"><b>No hay jugadores activos con esos filtros.</b></div>';
+ 
+  if (bajaPlayers.length){
+    html += `<details style="margin-top:20px;">
+      <summary style="cursor:pointer; color:var(--red); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Dados de baja (${bajaPlayers.length})</summary>
+      <div class="tbl-wrap" style="margin-top:10px; opacity:0.8;"><table class="datatbl">${theadHtml}<tbody>${bajaPlayers.map(buildRow).join('')}</tbody></table></div>
+    </details>`;
+  }
+ 
+  el.innerHTML = html;
+ 
   el.querySelectorAll('tr[data-row]').forEach(tr=>{
     const rowIndex = Number(tr.dataset.row);
     tr.querySelectorAll('input[type=checkbox]').forEach(cb=>{
@@ -747,7 +759,7 @@ function renderDocs(){
   });
 }
 ['docFilterPos','docFilterYear','docFilterState'].forEach(id=>document.getElementById(id).addEventListener('change', renderDocs));
-
+ 
 // ---------- PAGOS TAB ----------
 function renderPagos(){
   const fPos = document.getElementById('payFilterPos').value;
@@ -758,17 +770,19 @@ function renderPagos(){
     if (!matchesSearch(p)) return false;
     return true;
   }).sort((a,b)=>(a.numero||999)-(b.numero||999));
-
+ 
   const el = document.getElementById('pagosContent');
   if (!players.length){ el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>'; return; }
   const payNames = STATE.paymentColumnNames;
-
-  const rows = players.map(p=>{
+  const activePlayers = players.filter(p=>!p.baja);
+  const bajaPlayers = players.filter(p=>p.baja);
+ 
+  const buildRow = (p) => {
     const pct = attendancePct(p);
     return `
     <tr data-row="${p.rowIndex}">
+      <td${p.baja ? ' style="color:var(--red);"' : ''}>${p.nombre}${p.baja ? ' (baja)' : ''}</td>
       <td>#${p.numero||'--'}</td>
-      <td>${p.nombre}</td>
       <td>${p.anioNacimiento||'—'}</td>
       <td>${p.posicion||'—'}</td>
       ${payNames.map(name=>`<td style="text-align:center;"><input type="checkbox" data-pay="${name}" ${p.pagos[name]?'checked':''}></td>`).join('')}
@@ -776,12 +790,22 @@ function renderPagos(){
       <td>${pct!==null ? pct+'% asist.' : '—'}</td>
       <td class="row-save-msg"></td>
     </tr>`;
-  }).join('');
-
-  el.innerHTML = `<div class="tbl-wrap"><table class="datatbl">
-    <thead><tr><th>#</th><th>Nombre</th><th>Año</th><th>Posición</th>${payNames.map(n=>`<th>${n}</th>`).join('')}<th>Estado</th><th>Asistencia</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-
+  };
+  const theadHtml = `<thead><tr><th>Nombre</th><th>#</th><th>Año</th><th>Posición</th>${payNames.map(n=>`<th>${n}</th>`).join('')}<th>Estado</th><th>Asistencia</th><th></th></tr></thead>`;
+ 
+  let html = activePlayers.length
+    ? `<div class="tbl-wrap"><table class="datatbl">${theadHtml}<tbody>${activePlayers.map(buildRow).join('')}</tbody></table></div>`
+    : '<div class="empty-state"><b>No hay jugadores activos con esos filtros.</b></div>';
+ 
+  if (bajaPlayers.length){
+    html += `<details style="margin-top:20px;">
+      <summary style="cursor:pointer; color:var(--red); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Dados de baja (${bajaPlayers.length})</summary>
+      <div class="tbl-wrap" style="margin-top:10px; opacity:0.8;"><table class="datatbl">${theadHtml}<tbody>${bajaPlayers.map(buildRow).join('')}</tbody></table></div>
+    </details>`;
+  }
+ 
+  el.innerHTML = html;
+ 
   el.querySelectorAll('tr[data-row]').forEach(tr=>{
     const rowIndex = Number(tr.dataset.row);
     tr.querySelectorAll('input[type=checkbox]').forEach(cb=>{
@@ -800,7 +824,7 @@ function renderPagos(){
   });
 }
 ['payFilterPos','payFilterYear'].forEach(id=>document.getElementById(id).addEventListener('change', renderPagos));
-
+ 
 // ---------- PLAYER MODAL (datos básicos + foto) ----------
 function openPlayerModal(rowIndex){
   isNewPlayer = false; currentPlayerRow = rowIndex; pendingPhotoDataUrl = null;
@@ -847,7 +871,7 @@ function renderPayGrid(pagos){
 document.getElementById('addPlayerBtn').onclick = openNewPlayerModal;
 document.getElementById('closeModal').onclick = () => document.getElementById('playerOverlay').classList.remove('show');
 document.getElementById('playerOverlay').onclick = (e) => { if (e.target.id === 'playerOverlay') e.currentTarget.classList.remove('show'); };
-
+ 
 // ---------- foto: compresión y subida ----------
 function compressImage(file, maxW, quality){
   return new Promise((resolve, reject)=>{
@@ -882,7 +906,7 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
     document.getElementById('photoHint').textContent = 'No se pudo procesar la imagen.';
   }
 });
-
+ 
 document.getElementById('saveBtn').onclick = async () => {
   const msg = document.getElementById('modalSaveMsg');
   msg.textContent = 'Guardando...';
@@ -900,7 +924,7 @@ document.getElementById('saveBtn').onclick = async () => {
   document.querySelectorAll('#payGrid input[type=checkbox]').forEach(cb=>{ fields['doc:' + cb.dataset.pay] = cb.checked; });
   const bajaChecked = document.getElementById('f_baja').checked;
   const fechaRegistro = document.getElementById('f_fechaRegistro').value;
-
+ 
   try{
     if (isNewPlayer){
       await apiPost({ action:'addPlayer', player: fields });
@@ -927,7 +951,7 @@ document.getElementById('deleteBtn').onclick = async () => {
   document.getElementById('playerOverlay').classList.remove('show');
   await loadAll();
 };
-
+ 
 // ---------- view switching ----------
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick = () => {
@@ -940,36 +964,51 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.getElementById('attendanceView').style.display = view==='attendance' ? 'block' : 'none';
   };
 });
-
+ 
 // ---------- attendance ----------
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('attDate').value = today;
 document.getElementById('attDate').addEventListener('change', renderAttendance);
-
+ 
 function renderAttendance(){
   pendingAttendance = {};
   const el = document.getElementById('attendanceContent');
   if (!STATE.players.length) return;
   const date = document.getElementById('attDate').value;
-  const rows = STATE.players.filter(matchesSearch).sort((a,b)=>(a.numero||999)-(b.numero||999)).map(p=>{
+  const filtered = STATE.players.filter(matchesSearch).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  const activePlayers = filtered.filter(p=>!p.baja);
+  const bajaPlayers = filtered.filter(p=>p.baja);
+ 
+  const buildRow = (p) => {
     const rec = STATE.attendanceRecords[p.nombre] || {};
     const already = rec[date];
     const pct = attendancePct(p);
     return `
       <tr data-nombre="${p.nombre.replace(/"/g,'&quot;')}" data-numero="${p.numero||''}">
-        <td>#${p.numero||'--'}</td><td>${p.nombre}</td><td>${p.posicion||'—'}</td>
+        <td${p.baja ? ' style="color:var(--red);"' : ''}>${p.nombre}${p.baja ? ' (baja)' : ''}</td>
+        <td>#${p.numero||'--'}</td><td>${p.posicion||'—'}</td>
         <td>${pct!==null ? pct+'%' : '—'}</td>
         <td><div class="toggle">
           <button type="button" class="att-present ${already===true?'on-present':''}">Presente</button>
           <button type="button" class="att-absent ${already===false?'on-absent':''}">Ausente</button>
         </div></td>
       </tr>`;
-  }).join('');
-
-  el.innerHTML = `<div class="tbl-wrap"><table class="datatbl">
-    <thead><tr><th>#</th><th>Nombre</th><th>Posición</th><th>Asistencia</th><th>Marcar</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-
+  };
+  const theadHtml = `<thead><tr><th>Nombre</th><th>#</th><th>Posición</th><th>Asistencia</th><th>Marcar</th></tr></thead>`;
+ 
+  let html = activePlayers.length
+    ? `<div class="tbl-wrap"><table class="datatbl">${theadHtml}<tbody>${activePlayers.map(buildRow).join('')}</tbody></table></div>`
+    : '<div class="empty-state"><b>No hay jugadores activos con esos filtros.</b></div>';
+ 
+  if (bajaPlayers.length){
+    html += `<details style="margin-top:20px;">
+      <summary style="cursor:pointer; color:var(--red); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Dados de baja (${bajaPlayers.length})</summary>
+      <div class="tbl-wrap" style="margin-top:10px; opacity:0.8;"><table class="datatbl">${theadHtml}<tbody>${bajaPlayers.map(buildRow).join('')}</tbody></table></div>
+    </details>`;
+  }
+ 
+  el.innerHTML = html;
+ 
   el.querySelectorAll('tr[data-nombre]').forEach(tr=>{
     const nombre = tr.dataset.nombre;
     tr.querySelector('.att-present').onclick = () => {
@@ -1004,3 +1043,4 @@ document.getElementById('saveAttBtn').onclick = async () => {
 </script>
 </body>
 </html>
+ 
