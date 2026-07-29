@@ -116,6 +116,10 @@
     background:var(--card); color:var(--chalk); border:1px solid var(--pitch-line);
     padding:6.5px 10px; border-radius:6px; font-size:13px; font-family:'Inter',sans-serif;
   }
+  input[type=number]{
+    background:var(--card); color:var(--chalk); border:1px solid var(--pitch-line);
+    padding:6.5px 10px; border-radius:6px; font-size:13px; font-family:'Inter',sans-serif;
+  }
   .add-btn{
     margin-left:auto; background:var(--accent); color:var(--pitch-dark); border:none;
     padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13.5px;
@@ -319,6 +323,7 @@
         <button class="tab-btn" data-view="docs">Documentación</button>
         <button class="tab-btn" data-view="pagos">Pagos</button>
         <button class="tab-btn" data-view="attendance">Asistencia</button>
+        <button class="tab-btn" data-view="profes">Profes</button>
       </div>
       <button class="gear-btn" id="gearBtn" title="Conexión">⚙</button>
     </div>
@@ -388,6 +393,11 @@
           <option value="nombre_desc">Nombre (Z-A)</option>
         </select>
       </div>
+      <div class="filter-group">
+        <label>Costo del uniforme ($)</label>
+        <input type="number" id="uniformeCostoInput" min="0" step="1" style="width:90px;">
+        <button class="btn btn-ghost" id="uniformeCostoSaveBtn" style="padding:7px 12px; font-size:12px;">Guardar</button>
+      </div>
     </div>
     <div id="pagosContent"></div>
   </div>
@@ -411,6 +421,14 @@
     <div id="attendanceContent"></div>
   </div>
 
+  <!-- PROFES VIEW -->
+  <div id="profesView" style="display:none;">
+    <div class="filterbar">
+      <button class="add-btn" id="addProfeBtn">+ Agregar profe</button>
+    </div>
+    <div id="profesContent"></div>
+  </div>
+
 </div>
 
 <!-- SETTINGS MODAL (conexión, oculta por defecto) -->
@@ -425,6 +443,31 @@
     <div class="modal-actions">
       <span class="save-msg" id="settingsMsg"></span>
       <button class="btn btn-primary" id="settingsSaveBtn">Guardar y reconectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFE MODAL -->
+<div class="overlay" id="profeOverlay">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h3 id="profeModalTitle">Profe</h3>
+      <button class="close-x" id="closeProfeModal">&times;</button>
+    </div>
+    <div class="field-row single">
+      <div class="field"><label>Nombre completo</label><input id="pf_nombre"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Teléfono</label><input id="pf_telefono"></div>
+      <div class="field"><label>Rol</label><input id="pf_rol" placeholder="Ej. Entrenador, Auxiliar, Preparador físico"></div>
+    </div>
+    <div class="field-row single">
+      <div class="field"><label>Categoría / equipo a cargo</label><input id="pf_categoria" placeholder="Ej. CAT. 2013, Todas"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteProfeBtn">Eliminar</button>
+      <span class="save-msg" id="profeSaveMsg"></span>
+      <button class="btn btn-primary" id="saveProfeBtn">Guardar</button>
     </div>
   </div>
 </div>
@@ -511,7 +554,7 @@ function matchesSearch(p){
   const q = searchQuery.toLowerCase();
   return String(p.nombre||'').toLowerCase().includes(q) || String(p.numero||'').toLowerCase().includes(q);
 }
-let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {} };
+let STATE = { players: [], docColumnNames: [], paymentColumnNames: [], attendanceDates: [], attendanceRecords: {}, photos: {}, uniformeCosto: 500, profes: [] };
 let currentPlayerRow = null;
 let isNewPlayer = false;
 let pendingAttendance = {};
@@ -576,7 +619,8 @@ async function loadAll(onErr){
     document.getElementById('setupScreen').style.display = 'none';
     document.getElementById('rosterView').style.display = 'block';
     populateFilters();
-    renderRoster(); renderDocs(); renderPagos(); renderAttendance();
+    document.getElementById('uniformeCostoInput').value = STATE.uniformeCosto;
+    renderRoster(); renderDocs(); renderPagos(); renderAttendance(); renderProfes();
     refreshSettingsStatus();
     document.getElementById('settingsMsg').textContent = 'Conectado ✓';
   }catch(err){
@@ -630,13 +674,20 @@ function docsFilled(p){
   if (!STATE.docColumnNames.length) return 0;
   return STATE.docColumnNames.filter(name => p.documentacion && p.documentacion[name]).length;
 }
+function uniformePct(p){
+  const costo = STATE.uniformeCosto || 0;
+  if (!costo) return 0;
+  return Math.min(100, Math.round(((p.uniformeMonto||0) / costo) * 100));
+}
 function isPagoComplete(p){
-  if (!STATE.paymentColumnNames.length) return false;
-  return STATE.paymentColumnNames.every(name => p.pagos && p.pagos[name]);
+  const registroOk = STATE.paymentColumnNames.length ? STATE.paymentColumnNames.every(name => p.pagos && p.pagos[name]) : true;
+  return registroOk && uniformePct(p) >= 100;
 }
 function pagosFilled(p){
-  if (!STATE.paymentColumnNames.length) return 0;
-  return STATE.paymentColumnNames.filter(name => p.pagos && p.pagos[name]).length;
+  let count = 0, total = 0;
+  STATE.paymentColumnNames.forEach(name => { total++; if (p.pagos && p.pagos[name]) count++; });
+  total++; if (uniformePct(p) >= 100) count++; // uniforme cuenta como un ítem más
+  return { count, total };
 }
 function attendancePct(p){
   const rec = STATE.attendanceRecords[p.nombre];
@@ -716,7 +767,8 @@ function cardHtml(p){
   const docsOk = isDocComplete(p);
   const filled = docsFilled(p);
   const pagoOk = isPagoComplete(p);
-  const pagoFilled = pagosFilled(p);
+  const pagoInfo = pagosFilled(p);
+  const uPct = uniformePct(p);
   const pct = attendancePct(p);
   return `
     <div class="pcard" data-row="${p.rowIndex}" style="${p.baja ? 'opacity:0.75;' : ''}">
@@ -730,7 +782,10 @@ function cardHtml(p){
       <div class="pyear">Nacido en ${p.anioNacimiento || '—'}${p.fechaRegistro ? ' · Registrado ' + p.fechaRegistro : ''}</div>
       <div class="pmeta">
         <span class="pmeta-item"><span class="meta-dot ${docsOk?'ok':'bad'}"></span>Docs ${filled}/${STATE.docColumnNames.length}</span>
-        <span class="pmeta-item"><span class="meta-dot ${pagoOk?'ok':(pagoFilled>0?'mid':'bad')}"></span>Pagos ${pagoFilled}/${STATE.paymentColumnNames.length}</span>
+        <span class="pmeta-item"><span class="meta-dot ${pagoOk?'ok':(pagoInfo.count>0?'mid':'bad')}"></span>Pagos ${pagoInfo.count}/${pagoInfo.total}</span>
+      </div>
+      <div class="pmeta" style="margin-top:6px;">
+        <span class="pmeta-item"><div class="pct-bar-wrap"><div class="pct-bar" style="width:${uPct}%"></div></div>Uniforme ${uPct}%</span>
       </div>
       ${pct!==null ? `<div class="pmeta" style="margin-top:6px;"><span class="pmeta-item"><div class="pct-bar-wrap"><div class="pct-bar" style="width:${pct}%"></div></div>${pct}% asistencia</span></div>` : ''}
     </div>`;
@@ -820,12 +875,13 @@ function renderPagos(){
 
   const el = document.getElementById('pagosContent');
   if (!players.length){ el.innerHTML = '<div class="empty-state"><b>No hay jugadores con esos filtros.</b></div>'; return; }
-  const payNames = STATE.paymentColumnNames;
+  const payNames = STATE.paymentColumnNames; // ej. REGISTRO
   const activePlayers = players.filter(p=>!p.baja);
   const bajaPlayers = players.filter(p=>p.baja);
 
   const buildRow = (p) => {
     const pct = attendancePct(p);
+    const uPct = uniformePct(p);
     return `
     <tr data-row="${p.rowIndex}">
       <td${p.baja ? ' style="color:var(--red);"' : ''}>${p.nombre}${p.baja ? ' (baja)' : ''}</td>
@@ -833,12 +889,20 @@ function renderPagos(){
       <td>${p.anioNacimiento||'—'}</td>
       <td>${p.posicion||'—'}</td>
       ${payNames.map(name=>`<td style="text-align:center;"><input type="checkbox" data-pay="${name}" ${p.pagos[name]?'checked':''}></td>`).join('')}
+      <td>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" min="0" step="1" class="pay-input" data-uniforme-monto style="width:80px;" value="${p.uniformeMonto||0}">
+          <span style="font-size:11px; color:var(--chalk-dim);">/ $${STATE.uniformeCosto}</span>
+        </div>
+        <div class="pct-bar-wrap" style="width:100px; margin-top:4px;"><div class="pct-bar" style="width:${uPct}%"></div></div>
+        <span class="uniforme-pct-label" style="font-size:11px; color:var(--chalk-dim);">${uPct}%</span>
+      </td>
       <td><span class="complete-tag ${isPagoComplete(p)?'ok':'bad'}">${isPagoComplete(p)?'Completo':'Pendiente'}</span></td>
       <td>${pct!==null ? pct+'% asist.' : '—'}</td>
       <td class="row-save-msg"></td>
     </tr>`;
   };
-  const theadHtml = `<thead><tr><th>Nombre</th><th>#</th><th>Año</th><th>Posición</th>${payNames.map(n=>`<th>${n}</th>`).join('')}<th>Estado</th><th>Asistencia</th><th></th></tr></thead>`;
+  const theadHtml = `<thead><tr><th>Nombre</th><th>#</th><th>Año</th><th>Posición</th>${payNames.map(n=>`<th>${n}</th>`).join('')}<th>Uniforme ($)</th><th>Estado</th><th>Asistencia</th><th></th></tr></thead>`;
 
   let html = activePlayers.length
     ? `<div class="tbl-wrap"><table class="datatbl">${theadHtml}<tbody>${activePlayers.map(buildRow).join('')}</tbody></table></div>`
@@ -868,9 +932,35 @@ function renderPagos(){
         setTimeout(()=>{ msgCell.textContent=''; }, 1500);
       };
     });
+    const montoInput = tr.querySelector('[data-uniforme-monto]');
+    if (montoInput){
+      const nombreForRow = STATE.players.find(pl=>pl.rowIndex===rowIndex).nombre;
+      montoInput.onchange = async () => {
+        const msgCell = tr.querySelector('.row-save-msg');
+        msgCell.textContent = 'Guardando...';
+        const monto = Number(montoInput.value) || 0;
+        await apiPost({ action:'setUniformeMonto', nombre: nombreForRow, monto });
+        const p = STATE.players.find(pl=>pl.rowIndex===rowIndex);
+        p.uniformeMonto = monto;
+        msgCell.textContent = 'Guardado ✓';
+        const uPct = uniformePct(p);
+        tr.querySelector('.pct-bar').style.width = uPct + '%';
+        tr.querySelector('.uniforme-pct-label').textContent = uPct + '%';
+        tr.querySelector('.complete-tag').outerHTML = `<span class="complete-tag ${isPagoComplete(p)?'ok':'bad'}">${isPagoComplete(p)?'Completo':'Pendiente'}</span>`;
+        setTimeout(()=>{ msgCell.textContent=''; }, 1500);
+      };
+    }
   });
 }
 ['payFilterPos','payFilterYear','paySort'].forEach(id=>document.getElementById(id).addEventListener('change', renderPagos));
+
+document.getElementById('uniformeCostoInput').value = STATE.uniformeCosto;
+document.getElementById('uniformeCostoSaveBtn').onclick = async () => {
+  const val = Number(document.getElementById('uniformeCostoInput').value) || 0;
+  await apiPost({ action:'setConfig', key:'costoUniforme', value: val });
+  STATE.uniformeCosto = val;
+  renderRoster(); renderPagos();
+};
 
 // ---------- PLAYER MODAL (datos básicos + foto) ----------
 function openPlayerModal(rowIndex){
@@ -1016,6 +1106,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.getElementById('docsView').style.display = view==='docs' ? 'block' : 'none';
     document.getElementById('pagosView').style.display = view==='pagos' ? 'block' : 'none';
     document.getElementById('attendanceView').style.display = view==='attendance' ? 'block' : 'none';
+    document.getElementById('profesView').style.display = view==='profes' ? 'block' : 'none';
   };
 });
 
@@ -1095,6 +1186,83 @@ document.getElementById('saveAttBtn').onclick = async () => {
   }catch(err){
     msg.textContent = 'Error al guardar';
   }
+};
+
+// ---------- PROFES TAB ----------
+let currentProfeRow = null;
+let isNewProfe = false;
+
+function renderProfes(){
+  const el = document.getElementById('profesContent');
+  const profes = STATE.profes || [];
+  if (!profes.length){ el.innerHTML = '<div class="empty-state"><b>Aún no hay profes registrados.</b><br>Usa "+ Agregar profe" para empezar.</div>'; return; }
+  const cards = profes.map(pf => `
+    <div class="pcard" data-row="${pf.rowIndex}">
+      <div class="pcard-top">
+        <div class="pphoto">${JERSEY_SVG}</div>
+        <div class="pcard-headtext">
+          <span class="pos-badge">${pf.rol || 'Profe'}</span>
+        </div>
+      </div>
+      <div class="pname">${pf.nombre}</div>
+      <div class="pyear">${pf.categoria ? 'A cargo de ' + pf.categoria : 'Sin categoría asignada'}</div>
+      ${pf.telefono ? `<div class="pmeta"><span class="pmeta-item">📞 ${pf.telefono}</span></div>` : ''}
+    </div>`).join('');
+  el.innerHTML = `<div class="grid">${cards}</div>`;
+  el.querySelectorAll('.pcard').forEach(card=>{ card.onclick = () => openProfeModal(Number(card.dataset.row)); });
+}
+
+function openProfeModal(rowIndex){
+  isNewProfe = false; currentProfeRow = rowIndex;
+  const pf = STATE.profes.find(p=>p.rowIndex === rowIndex);
+  document.getElementById('profeModalTitle').textContent = pf.nombre;
+  document.getElementById('pf_nombre').value = pf.nombre || '';
+  document.getElementById('pf_telefono').value = pf.telefono || '';
+  document.getElementById('pf_rol').value = pf.rol || '';
+  document.getElementById('pf_categoria').value = pf.categoria || '';
+  document.getElementById('deleteProfeBtn').style.display = 'inline-block';
+  document.getElementById('profeSaveMsg').textContent = '';
+  document.getElementById('profeOverlay').classList.add('show');
+}
+function openNewProfeModal(){
+  isNewProfe = true; currentProfeRow = null;
+  document.getElementById('profeModalTitle').textContent = 'Nuevo profe';
+  ['pf_nombre','pf_telefono','pf_rol','pf_categoria'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('deleteProfeBtn').style.display = 'none';
+  document.getElementById('profeSaveMsg').textContent = '';
+  document.getElementById('profeOverlay').classList.add('show');
+}
+document.getElementById('addProfeBtn').onclick = openNewProfeModal;
+document.getElementById('closeProfeModal').onclick = () => document.getElementById('profeOverlay').classList.remove('show');
+document.getElementById('profeOverlay').onclick = (e) => { if (e.target.id === 'profeOverlay') e.currentTarget.classList.remove('show'); };
+
+document.getElementById('saveProfeBtn').onclick = async () => {
+  const msg = document.getElementById('profeSaveMsg');
+  msg.textContent = 'Guardando...';
+  const fields = {
+    nombre: document.getElementById('pf_nombre').value,
+    telefono: document.getElementById('pf_telefono').value,
+    rol: document.getElementById('pf_rol').value,
+    categoria: document.getElementById('pf_categoria').value
+  };
+  try{
+    const r = isNewProfe
+      ? await apiPost({ action:'addProfe', profe: fields })
+      : await apiPost({ action:'updateProfe', rowIndex: currentProfeRow, fields });
+    if (r.error) throw new Error(r.error);
+    msg.textContent = 'Guardado ✓';
+    await loadAll();
+    setTimeout(()=>document.getElementById('profeOverlay').classList.remove('show'), 400);
+  }catch(err){
+    msg.textContent = '';
+    alert('No se pudo guardar.\n\n' + err.message);
+  }
+};
+document.getElementById('deleteProfeBtn').onclick = async () => {
+  if (!confirm('¿Eliminar a este profe?')) return;
+  await apiPost({ action:'deleteProfe', rowIndex: currentProfeRow });
+  document.getElementById('profeOverlay').classList.remove('show');
+  await loadAll();
 };
 </script>
 </body>
