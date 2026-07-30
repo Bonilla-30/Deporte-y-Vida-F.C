@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -181,6 +181,8 @@
       <button class="tab-btn" data-view="eventos" id="tabEventos">Eventos</button>
       <button class="tab-btn" data-view="formacion" id="tabFormacion">Formaciones</button>
       <button class="tab-btn" data-view="profes" id="tabProfes" style="display:none;">Profes</button>
+      <button class="tab-btn" data-view="presi-publicaciones" id="tabPresiPublicaciones" style="display:none;">Publicaciones</button>
+      <button class="tab-btn" data-view="presi-necesidades" id="tabPresiNecesidades" style="display:none;">Ayuda</button>
       <button class="tab-btn" data-view="documentacion" id="tabDocumentacion" style="display:none;">Documentación</button>
       <button class="tab-btn" data-view="pagos" id="tabPagos" style="display:none;">Pagos</button>
       <button class="tab-btn" data-view="publicaciones" id="tabPublicaciones" style="display:none;">Publicaciones</button>
@@ -293,6 +295,10 @@
         <div class="section-title">Profes y Directiva</div>
         <div id="profesListPresi"></div>
       </div>
+    </div>
+ 
+    <!-- PUBLICACIONES - revisión (Presidente) -->
+    <div class="view" id="view-presi-publicaciones">
       <div class="card">
         <div class="section-title">Publicaciones por revisar</div>
         <div id="publicacionesRevision">Nada pendiente.</div>
@@ -305,6 +311,10 @@
         <div class="section-title">Rechazadas</div>
         <div id="publicacionesRechazadas">Aún ninguna.</div>
       </div>
+    </div>
+ 
+    <!-- AYUDA - necesidades (Presidente) -->
+    <div class="view" id="view-presi-necesidades">
       <div class="card">
         <div class="section-title">Pedir ayuda al equipo de Ayuda</div>
         <div class="field"><label>¿Qué hace falta?</label><input type="text" id="nec_texto" placeholder="Ej. Necesitamos 3 personas para el sábado a las 8am"></div>
@@ -522,6 +532,7 @@ function resetLoginSteps(){
 function detectarFuncion(rol){
   const r = String(rol||'').toLowerCase();
   if (r.includes('presi')) return 'presidente';
+  if (r.includes('director') || r.includes('deportivo')) return 'director';
   if (r.includes('papel') || r.includes('document')) return 'papeles';
   if (r.includes('red')) return 'redes';
   if (r.includes('ayuda')) return 'ayuda';
@@ -545,11 +556,13 @@ function entrarAlPanel(){
   document.getElementById('tabFalta').style.display = esDirectiva ? 'none' : 'inline-block';
   document.getElementById('tabFormacion').style.display = esDirectiva ? 'none' : 'inline-block';
   document.getElementById('tabProfes').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
+  document.getElementById('tabPresiPublicaciones').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
+  document.getElementById('tabPresiNecesidades').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
   document.getElementById('tabDocumentacion').style.display = funcion === 'papeles' ? 'inline-block' : 'none';
   document.getElementById('tabPagos').style.display = funcion === 'papeles' ? 'inline-block' : 'none';
   document.getElementById('tabPublicaciones').style.display = funcion === 'redes' ? 'inline-block' : 'none';
   document.getElementById('tabNecesidades').style.display = funcion === 'ayuda' ? 'inline-block' : 'none';
-  document.getElementById('crearEventoCard').style.display = funcion === 'presidente' ? 'block' : 'none';
+  document.getElementById('crearEventoCard').style.display = (funcion === 'presidente' || funcion === 'director') ? 'block' : 'none';
  
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -1239,3 +1252,4 @@ function renderHojaDirectiva(){
 </script>
 </body>
 </html>
+ 
