@@ -302,6 +302,10 @@
         <div class="section-title">Documentación de jugadores</div>
         <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;" id="docTablePresi"></table></div>
       </div>
+      <div class="card">
+        <div class="section-title">Asistencia de jugadores</div>
+        <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;" id="asistenciaTablePresi"></table></div>
+      </div>
     </div>
  
     <!-- PAGOS (Papeles) -->
@@ -471,8 +475,9 @@ function entrarAlPanel(){
   const esDirectiva = miPerfil.tipo === 'Directiva';
   const funcion = esDirectiva ? detectarFuncion(miPerfil.rol) : null;
  
-  // a Directiva no le mostramos asistencias de alumnos ni el planeador de formaciones — solo eventos y sus propias faltas, más lo de su función
+  // a Directiva no le mostramos asistencias de alumnos, "avisar falta" ni el planeador de formaciones — solo eventos, más lo de su función
   document.getElementById('tabAlumnos').style.display = esDirectiva ? 'none' : 'inline-block';
+  document.getElementById('tabFalta').style.display = esDirectiva ? 'none' : 'inline-block';
   document.getElementById('tabFormacion').style.display = esDirectiva ? 'none' : 'inline-block';
   document.getElementById('tabProfes').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
   document.getElementById('tabDocumentacion').style.display = funcion === 'papeles' ? 'inline-block' : 'none';
@@ -495,7 +500,7 @@ function entrarAlPanel(){
   poblarPartidos();
  
   if (funcion === 'presidente'){ renderProfesPresi(); renderPublicacionesRevision(); }
-  if (funcion === 'papeles'){ renderDocTablePresi(); renderPayTablePresi(); }
+  if (funcion === 'papeles'){ renderDocTablePresi(); renderPayTablePresi(); renderAsistenciaTablePresi(); }
   if (funcion === 'redes'){ renderPublicacionesRedes(); }
   if (funcion === 'ayuda'){ renderNecesidadesList(); renderHojaDirectiva(); }
 }
@@ -938,6 +943,25 @@ function renderDocTablePresi(){
   });
 }
  
+function renderAsistenciaTablePresi(){
+  const tbl = document.getElementById('asistenciaTablePresi');
+  const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  const thead = `<tr style="border-bottom:1px solid var(--pitch-line);"><th style="text-align:left; padding:6px;">Jugador</th><th style="padding:6px;">Categoría</th><th style="padding:6px;">% Asistencia</th><th style="padding:6px;">Entrenamientos registrados</th></tr>`;
+  const rows = activos.map(p => {
+    const rec = STATE.attendanceRecords[p.nombre];
+    const entries = rec ? Object.entries(rec).filter(([fecha]) => !p.fechaRegistro || fecha >= p.fechaRegistro) : [];
+    const pct = entries.length ? Math.round(entries.filter(([,v])=>v).length / entries.length * 100) : null;
+    return `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:6px; white-space:nowrap;">#${p.numero||'--'} ${p.nombre}</td>
+      <td style="padding:6px; text-align:center;">${p.anioNacimiento||'—'}</td>
+      <td style="padding:6px; text-align:center; color:${pct!==null?'var(--accent)':'var(--chalk-dim)'}; font-weight:600;">${pct!==null ? pct+'%' : '—'}</td>
+      <td style="padding:6px; text-align:center; color:var(--chalk-dim);">${entries.length}</td>
+    </tr>`;
+  }).join('');
+  tbl.innerHTML = thead + rows;
+}
+ 
 function renderPayTablePresi(){
   const tbl = document.getElementById('payTablePresi');
   const payNames = STATE.paymentColumnNames || [];
@@ -1018,4 +1042,3 @@ function renderHojaDirectiva(){
 </script>
 </body>
 </html>
- 
