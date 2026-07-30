@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -298,6 +299,26 @@
         <div id="publicacionesRevision">Nada pendiente.</div>
       </div>
       <div class="card">
+        <div class="section-title">Aprobadas</div>
+        <div id="publicacionesAprobadas">Aún ninguna.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Rechazadas</div>
+        <div id="publicacionesRechazadas">Aún ninguna.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Aprobadas</div>
+        <div id="publicacionesAprobadas">Aún ninguna.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Rechazadas</div>
+        <div id="publicacionesRechazadas">Aún ninguna.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Publicaciones ya revisadas</div>
+        <div id="publicacionesRevisadas">Aún ninguna revisada.</div>
+      </div>
+      <div class="card">
         <div class="section-title">Pedir ayuda al equipo de Ayuda</div>
         <div class="field"><label>¿Qué hace falta?</label><input type="text" id="nec_texto" placeholder="Ej. Necesitamos 3 personas para el sábado a las 8am"></div>
         <button class="btn" id="crearNecesidadBtn" style="width:100%; margin-top:10px;">Publicar necesidad</button>
@@ -315,6 +336,24 @@
  
     <!-- DOCUMENTACIÓN (Papeles) -->
     <div class="view" id="view-documentacion">
+      <div class="card">
+        <div class="section-title">Agregar jugador nuevo</div>
+        <div class="row2">
+          <div class="field"><label>Número</label><input type="text" id="np_numero"></div>
+          <div class="field"><label>Posición</label><input type="text" id="np_posicion" placeholder="Ej. LAT, DEL"></div>
+        </div>
+        <div class="field" style="margin-top:10px;"><label>Nombre completo</label><input type="text" id="np_nombre"></div>
+        <div class="row2" style="margin-top:10px;">
+          <div class="field"><label>Año de nacimiento</label><input type="text" id="np_anio"></div>
+          <div class="field"><label>Teléfono jugador</label><input type="text" id="np_telJugador"></div>
+        </div>
+        <div class="row2" style="margin-top:10px;">
+          <div class="field"><label>Nombre del tutor</label><input type="text" id="np_nombreTutor"></div>
+          <div class="field"><label>Teléfono tutor</label><input type="text" id="np_telTutor"></div>
+        </div>
+        <button class="btn" id="agregarJugadorBtn" style="width:100%; margin-top:14px;">Agregar a la plantilla</button>
+        <div class="msg" id="agregarJugadorMsg"></div>
+      </div>
       <div class="card">
         <div class="section-title">Documentación de jugadores</div>
         <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;" id="docTablePresi"></table></div>
@@ -927,9 +966,14 @@ function renderProfesPresi(){
  
 function renderPublicacionesRevision(){
   const el = document.getElementById('publicacionesRevision');
-  const pendientes = (STATE.publicaciones||[]).filter(p=>p.estado==='Pendiente');
-  if (!pendientes.length){ el.innerHTML = 'Nada pendiente.'; return; }
-  el.innerHTML = pendientes.map(p => `
+  const elAprob = document.getElementById('publicacionesAprobadas');
+  const elRech = document.getElementById('publicacionesRechazadas');
+  const todas = STATE.publicaciones || [];
+  const pendientes = todas.filter(p=>p.estado==='Pendiente');
+  const aprobadas = todas.filter(p=>p.estado==='Aprobada').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const rechazadas = todas.filter(p=>p.estado==='Rechazada').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+ 
+  el.innerHTML = pendientes.length ? pendientes.map(p => `
     <div class="evento-row">
       <div style="font-weight:600; font-size:13.5px;">${p.descripcion||'(sin descripción)'}</div>
       <div style="font-size:12px; color:var(--chalk-dim);">${p.creadoPor} · ${p.fecha} ${p.link?('· <a href="'+p.link+'" target="_blank">Ver link</a>'):''}</div>
@@ -937,7 +981,20 @@ function renderPublicacionesRevision(){
         <a href="#" data-aprobar="${p.rowIndex}" style="color:var(--accent); font-size:12px;">Aprobar</a>
         <a href="#" data-rechazar="${p.rowIndex}" style="color:var(--red); font-size:12px;">Rechazar</a>
       </div>
-    </div>`).join('');
+    </div>`).join('') : 'Nada pendiente.';
+ 
+  elAprob.innerHTML = aprobadas.length ? aprobadas.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.descripcion||'(sin descripción)'}</div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.creadoPor} · ${p.fecha} ${p.link?('· <a href="'+p.link+'" target="_blank">Ver link</a>'):''} · <span style="color:var(--accent);">✓ Aprobada</span></div>
+    </div>`).join('') : 'Aún ninguna.';
+ 
+  elRech.innerHTML = rechazadas.length ? rechazadas.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.descripcion||'(sin descripción)'}</div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.creadoPor} · ${p.fecha} · <span style="color:var(--red);">✗ Rechazada</span></div>
+    </div>`).join('') : 'Aún ninguna.';
+ 
   el.querySelectorAll('[data-aprobar]').forEach(a=>{ a.onclick = async (e)=>{ e.preventDefault(); await llamar('revisarPublicacion', {rowIndex:Number(a.dataset.aprobar), estado:'Aprobada'}); await recargarSilencioso(); renderPublicacionesRevision(); }; });
   el.querySelectorAll('[data-rechazar]').forEach(a=>{ a.onclick = async (e)=>{ e.preventDefault(); await llamar('revisarPublicacion', {rowIndex:Number(a.dataset.rechazar), estado:'Rechazada'}); await recargarSilencioso(); renderPublicacionesRevision(); }; });
 }
@@ -959,6 +1016,30 @@ document.getElementById('crearNecesidadBtn').onclick = async () => {
 };
  
 // ---------- PAPELES: documentación y pagos de todos los jugadores ----------
+document.getElementById('agregarJugadorBtn').onclick = async () => {
+  const msg = document.getElementById('agregarJugadorMsg');
+  const player = {
+    numero: document.getElementById('np_numero').value,
+    posicion: document.getElementById('np_posicion').value,
+    nombre: document.getElementById('np_nombre').value,
+    anioNacimiento: document.getElementById('np_anio').value,
+    telJugador: document.getElementById('np_telJugador').value,
+    nombreTutor: document.getElementById('np_nombreTutor').value,
+    telTutor: document.getElementById('np_telTutor').value
+  };
+  if (!player.nombre){ msg.textContent = 'Pon al menos el nombre.'; msg.className = 'msg err'; return; }
+  msg.textContent = 'Agregando...'; msg.className = 'msg';
+  try{
+    await llamar('addPlayer', { player });
+    msg.textContent = 'Jugador agregado ✓'; msg.className = 'msg ok';
+    ['np_numero','np_posicion','np_nombre','np_anio','np_telJugador','np_nombreTutor','np_telTutor'].forEach(id=>document.getElementById(id).value='');
+    await recargarSilencioso();
+    renderDocTablePresi(); renderPayTablePresi(); renderAsistenciaTablePresi();
+  }catch(err){
+    msg.textContent = 'No se pudo agregar: ' + err.message; msg.className = 'msg err';
+  }
+};
+ 
 function renderDocTablePresi(){
   const tbl = document.getElementById('docTablePresi');
   const docNames = STATE.docColumnNames || [];
@@ -1155,3 +1236,4 @@ function renderHojaDirectiva(){
 </script>
 </body>
 </html>
+ 
