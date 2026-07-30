@@ -1,6 +1,4 @@
 
-
-Index · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -517,6 +515,10 @@ Index · HTML
       <label>Enlace del grupo de WhatsApp</label>
       <input id="whatsappGrupoInput" type="text" placeholder="https://chat.whatsapp.com/...">
     </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>Carpeta de Drive para Redes</label>
+      <input id="linkDriveRedesInput" type="text" placeholder="https://drive.google.com/drive/folders/...">
+    </div>
     <div style="margin-bottom:16px;">
       <button class="btn btn-ghost" id="avisosSaveBtn" style="width:100%;">Guardar avisos</button>
     </div>
@@ -795,6 +797,7 @@ document.getElementById('gearBtn').onclick = () => {
   document.getElementById('settingsUrlInput').value = API_URL;
   document.getElementById('correoAdminInput').value = STATE.correoAdmin || '';
   document.getElementById('whatsappGrupoInput').value = STATE.whatsappGrupoLink || '';
+  document.getElementById('linkDriveRedesInput').value = STATE.linkDriveRedes || '';
   refreshSettingsStatus();
   document.getElementById('settingsOverlay').classList.add('show');
 };
@@ -1185,10 +1188,13 @@ document.getElementById('uniformeCostoSaveBtn').onclick = async () => {
 document.getElementById('avisosSaveBtn').onclick = async () => {
   const correo = document.getElementById('correoAdminInput').value.trim();
   const grupo = document.getElementById('whatsappGrupoInput').value.trim();
+  const driveRedes = document.getElementById('linkDriveRedesInput').value.trim();
   await apiPost({ action:'setConfig', key:'correoAdmin', value: correo });
   await apiPost({ action:'setConfig', key:'whatsappGrupoLink', value: grupo });
+  await apiPost({ action:'setConfig', key:'linkDriveRedes', value: driveRedes });
   STATE.correoAdmin = correo;
   STATE.whatsappGrupoLink = grupo;
+  STATE.linkDriveRedes = driveRedes;
   alert('Avisos actualizados ✓');
 };
  
@@ -1892,4 +1898,3 @@ document.getElementById('guardarFichaPartidoBtn').onclick = async () => {
 </script>
 </body>
 </html>
- 
