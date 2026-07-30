@@ -167,10 +167,15 @@
   <!-- BODY -->
   <div id="panelBody">
     <div class="tabs">
-      <button class="tab-btn active" data-view="alumnos">Mis alumnos</button>
-      <button class="tab-btn" data-view="falta">Avisar falta</button>
-      <button class="tab-btn" data-view="eventos">Eventos</button>
-      <button class="tab-btn" data-view="formacion">Formaciones</button>
+      <button class="tab-btn active" data-view="alumnos" id="tabAlumnos">Mis alumnos</button>
+      <button class="tab-btn" data-view="falta" id="tabFalta">Avisar falta</button>
+      <button class="tab-btn" data-view="eventos" id="tabEventos">Eventos</button>
+      <button class="tab-btn" data-view="formacion" id="tabFormacion">Formaciones</button>
+      <button class="tab-btn" data-view="profes" id="tabProfes" style="display:none;">Profes</button>
+      <button class="tab-btn" data-view="documentacion" id="tabDocumentacion" style="display:none;">Documentación</button>
+      <button class="tab-btn" data-view="pagos" id="tabPagos" style="display:none;">Pagos</button>
+      <button class="tab-btn" data-view="publicaciones" id="tabPublicaciones" style="display:none;">Publicaciones</button>
+      <button class="tab-btn" data-view="necesidades" id="tabNecesidades" style="display:none;">Necesidades</button>
     </div>
  
     <!-- ALUMNOS -->
@@ -213,6 +218,29 @@
  
     <!-- EVENTOS -->
     <div class="view" id="view-eventos">
+      <div class="card" id="crearEventoCard" style="display:none;">
+        <div class="section-title">Publicar un anuncio / evento</div>
+        <div class="row2">
+          <div class="field"><label>Tipo</label>
+            <select id="ev_tipo">
+              <option value="Partido">Partido</option>
+              <option value="Entrenamiento">Entrenamiento</option>
+              <option value="Cancelación">Cancelación</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="field"><label>Categoría (opcional)</label><input type="text" id="ev_categoria" placeholder="Ej. Todas"></div>
+        </div>
+        <div class="field" style="margin-top:12px;"><label>Título</label><input type="text" id="ev_titulo" placeholder="Ej. Partido vs Águilas FC"></div>
+        <div class="row2" style="margin-top:12px;">
+          <div class="field"><label>Fecha</label><input type="date" id="ev_fecha"></div>
+          <div class="field"><label>Hora</label><input type="time" id="ev_hora"></div>
+        </div>
+        <div class="field" style="margin-top:12px;"><label>Lugar</label><input type="text" id="ev_lugar"></div>
+        <div class="field" style="margin-top:12px;"><label>Detalles (opcional)</label><input type="text" id="ev_descripcion"></div>
+        <button class="btn" id="crearEventoBtn" style="width:100%; margin-top:14px;">Publicar y avisar</button>
+        <div class="msg" id="crearEventoMsg"></div>
+      </div>
       <div class="card">
         <div class="section-title">Próximos eventos</div>
         <div id="eventosList">Sin eventos programados.</div>
@@ -247,6 +275,69 @@
           <button class="btn" id="guardarFormacionBtn" style="margin-top:16px;">Guardar</button>
           <div class="msg" id="formacionMsg"></div>
         </div>
+      </div>
+    </div>
+ 
+    <!-- PROFES (Presidente) -->
+    <div class="view" id="view-profes">
+      <div class="card">
+        <div class="section-title">Profes y Directiva</div>
+        <div id="profesListPresi"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Publicaciones por revisar</div>
+        <div id="publicacionesRevision">Nada pendiente.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Pedir ayuda al equipo de Ayuda</div>
+        <div class="field"><label>¿Qué hace falta?</label><input type="text" id="nec_texto" placeholder="Ej. Necesitamos 3 personas para el sábado a las 8am"></div>
+        <button class="btn" id="crearNecesidadBtn" style="width:100%; margin-top:10px;">Publicar necesidad</button>
+        <div class="msg" id="necesidadMsg"></div>
+      </div>
+    </div>
+ 
+    <!-- DOCUMENTACIÓN (Papeles) -->
+    <div class="view" id="view-documentacion">
+      <div class="card">
+        <div class="section-title">Documentación de jugadores</div>
+        <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;" id="docTablePresi"></table></div>
+      </div>
+    </div>
+ 
+    <!-- PAGOS (Papeles) -->
+    <div class="view" id="view-pagos">
+      <div class="card">
+        <div class="section-title">Pagos de jugadores</div>
+        <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;" id="payTablePresi"></table></div>
+      </div>
+    </div>
+ 
+    <!-- PUBLICACIONES (Redes) -->
+    <div class="view" id="view-publicaciones">
+      <div class="card">
+        <div class="section-title">Subir publicaciones</div>
+        <p style="font-size:12.5px; color:var(--chalk-dim);">Sube tus fotos/videos a la carpeta de Drive del equipo, y avisa aquí para que el presidente las revise.</p>
+        <a id="linkDriveRedesBtn" href="#" target="_blank" class="btn" style="display:inline-block; text-decoration:none; margin-bottom:16px;">Abrir carpeta de Drive</a>
+        <div class="field"><label>Descripción de la publicación</label><input type="text" id="pub_descripcion" placeholder="Ej. Fotos del partido del sábado"></div>
+        <div class="field" style="margin-top:10px;"><label>Link (opcional)</label><input type="text" id="pub_link" placeholder="Enlace a la foto/carpeta"></div>
+        <button class="btn" id="enviarPublicacionBtn" style="width:100%; margin-top:12px;">Enviar para revisión</button>
+        <div class="msg" id="publicacionMsg"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Mis publicaciones</div>
+        <div id="misPublicaciones">Aún no has enviado nada.</div>
+      </div>
+    </div>
+ 
+    <!-- NECESIDADES (Ayuda) -->
+    <div class="view" id="view-necesidades">
+      <div class="card">
+        <div class="section-title">Lo que hace falta</div>
+        <div id="necesidadesList">Nada pendiente por ahora.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Directiva</div>
+        <div id="hojaDirectiva"></div>
       </div>
     </div>
   </div>
@@ -359,19 +450,54 @@ function resetLoginSteps(){
   document.getElementById('loginMsg').textContent = '';
 }
  
+function detectarFuncion(rol){
+  const r = String(rol||'').toLowerCase();
+  if (r.includes('presi')) return 'presidente';
+  if (r.includes('papel') || r.includes('document')) return 'papeles';
+  if (r.includes('red')) return 'redes';
+  if (r.includes('ayuda')) return 'ayuda';
+  return 'otro';
+}
+ 
 function entrarAlPanel(){
   guardarSesion(miPerfil.nombre);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('panelHeader').style.display = 'flex';
   document.getElementById('panelBody').style.display = 'block';
   document.getElementById('miNombre').textContent = miPerfil.nombre;
-  document.getElementById('miRol').textContent = (miPerfil.tipo === 'Directiva' ? 'Directiva' : (miPerfil.rol || 'Profe')) + (miPerfil.categoria ? ' · ' + miPerfil.categoria : '');
+  document.getElementById('miRol').textContent = (miPerfil.tipo === 'Directiva' ? (miPerfil.rol || 'Directiva') : (miPerfil.rol || 'Profe')) + (miPerfil.categoria ? ' · ' + miPerfil.categoria : '');
   document.getElementById('miFoto').innerHTML = miPerfil.foto ? `<img src="${miPerfil.foto}" alt="">` : '';
+ 
+  const esDirectiva = miPerfil.tipo === 'Directiva';
+  const funcion = esDirectiva ? detectarFuncion(miPerfil.rol) : null;
+ 
+  // a Directiva no le mostramos asistencias de alumnos ni el planeador de formaciones — solo eventos y sus propias faltas, más lo de su función
+  document.getElementById('tabAlumnos').style.display = esDirectiva ? 'none' : 'inline-block';
+  document.getElementById('tabFormacion').style.display = esDirectiva ? 'none' : 'inline-block';
+  document.getElementById('tabProfes').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
+  document.getElementById('tabDocumentacion').style.display = funcion === 'papeles' ? 'inline-block' : 'none';
+  document.getElementById('tabPagos').style.display = funcion === 'papeles' ? 'inline-block' : 'none';
+  document.getElementById('tabPublicaciones').style.display = funcion === 'redes' ? 'inline-block' : 'none';
+  document.getElementById('tabNecesidades').style.display = funcion === 'ayuda' ? 'inline-block' : 'none';
+  document.getElementById('crearEventoCard').style.display = funcion === 'presidente' ? 'block' : 'none';
+ 
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const tabInicial = esDirectiva ? 'tabEventos' : 'tabAlumnos';
+  const viewInicial = esDirectiva ? 'eventos' : 'alumnos';
+  document.getElementById(tabInicial).classList.add('active');
+  document.getElementById('view-' + viewInicial).classList.add('active');
+ 
   poblarFiltrosAlumnos();
   renderAlumnos();
   renderMisFaltas();
   renderEventos();
   poblarPartidos();
+ 
+  if (funcion === 'presidente'){ renderProfesPresi(); renderPublicacionesRevision(); }
+  if (funcion === 'papeles'){ renderDocTablePresi(); renderPayTablePresi(); }
+  if (funcion === 'redes'){ renderPublicacionesRedes(); }
+  if (funcion === 'ayuda'){ renderNecesidadesList(); renderHojaDirectiva(); }
 }
  
 document.getElementById('logoutBtn').onclick = () => {
@@ -709,6 +835,187 @@ document.getElementById('guardarFormacionBtn').onclick = async () => {
     msg.textContent = 'No se pudo guardar: ' + err.message; msg.className = 'msg err';
   }
 };
+ 
+// ---------- helper genérico para llamar al backend ----------
+async function llamar(action, payload){
+  const res = await fetch(API_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action, ...payload })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+ 
+// ---------- PRESIDENTE: crear eventos ----------
+document.getElementById('crearEventoBtn').onclick = async () => {
+  const msg = document.getElementById('crearEventoMsg');
+  const evento = {
+    tipo: document.getElementById('ev_tipo').value,
+    titulo: document.getElementById('ev_titulo').value,
+    fecha: document.getElementById('ev_fecha').value,
+    hora: document.getElementById('ev_hora').value,
+    lugar: document.getElementById('ev_lugar').value,
+    descripcion: document.getElementById('ev_descripcion').value,
+    categoria: document.getElementById('ev_categoria').value
+  };
+  if (!evento.titulo || !evento.fecha){ msg.textContent = 'Pon al menos título y fecha.'; msg.className = 'msg err'; return; }
+  msg.textContent = 'Publicando y avisando...'; msg.className = 'msg';
+  try{
+    await llamar('addEvento', { evento });
+    msg.textContent = 'Publicado ✓ Se avisó por correo.'; msg.className = 'msg ok';
+    ['ev_titulo','ev_fecha','ev_hora','ev_lugar','ev_descripcion','ev_categoria'].forEach(id=>document.getElementById(id).value='');
+    await recargarSilencioso();
+    renderEventos();
+  }catch(err){
+    msg.textContent = 'No se pudo publicar: ' + err.message; msg.className = 'msg err';
+  }
+};
+ 
+// ---------- PRESIDENTE: profes y directiva ----------
+function renderProfesPresi(){
+  const el = document.getElementById('profesListPresi');
+  const lista = (STATE.profes || []);
+  if (!lista.length){ el.innerHTML = 'Sin profes registrados.'; return; }
+  el.innerHTML = lista.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.nombre} <span style="color:var(--chalk-dim); font-weight:400;">— ${p.tipo === 'Directiva' ? (p.rol||'Directiva') : (p.rol||'Profe')}</span></div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.categoria ? p.categoria + ' · ' : ''}${p.telefono||'—'} ${p.correo?('· '+p.correo):''}</div>
+    </div>`).join('');
+}
+ 
+function renderPublicacionesRevision(){
+  const el = document.getElementById('publicacionesRevision');
+  const pendientes = (STATE.publicaciones||[]).filter(p=>p.estado==='Pendiente');
+  if (!pendientes.length){ el.innerHTML = 'Nada pendiente.'; return; }
+  el.innerHTML = pendientes.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.descripcion||'(sin descripción)'}</div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.creadoPor} · ${p.fecha} ${p.link?('· <a href="'+p.link+'" target="_blank">Ver link</a>'):''}</div>
+      <div style="margin-top:6px; display:flex; gap:10px;">
+        <a href="#" data-aprobar="${p.rowIndex}" style="color:var(--accent); font-size:12px;">Aprobar</a>
+        <a href="#" data-rechazar="${p.rowIndex}" style="color:var(--red); font-size:12px;">Rechazar</a>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-aprobar]').forEach(a=>{ a.onclick = async (e)=>{ e.preventDefault(); await llamar('revisarPublicacion', {rowIndex:Number(a.dataset.aprobar), estado:'Aprobada'}); await recargarSilencioso(); renderPublicacionesRevision(); }; });
+  el.querySelectorAll('[data-rechazar]').forEach(a=>{ a.onclick = async (e)=>{ e.preventDefault(); await llamar('revisarPublicacion', {rowIndex:Number(a.dataset.rechazar), estado:'Rechazada'}); await recargarSilencioso(); renderPublicacionesRevision(); }; });
+}
+ 
+document.getElementById('crearNecesidadBtn').onclick = async () => {
+  const msg = document.getElementById('necesidadMsg');
+  const texto = document.getElementById('nec_texto').value;
+  if (!texto){ msg.textContent = 'Escribe qué hace falta.'; msg.className = 'msg err'; return; }
+  msg.textContent = 'Publicando...'; msg.className = 'msg';
+  try{
+    await llamar('addNecesidad', { texto, creadoPor: miPerfil.nombre });
+    msg.textContent = 'Publicado ✓'; msg.className = 'msg ok';
+    document.getElementById('nec_texto').value = '';
+  }catch(err){
+    msg.textContent = 'No se pudo publicar: ' + err.message; msg.className = 'msg err';
+  }
+};
+ 
+// ---------- PAPELES: documentación y pagos de todos los jugadores ----------
+function renderDocTablePresi(){
+  const tbl = document.getElementById('docTablePresi');
+  const docNames = STATE.docColumnNames || [];
+  const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  const thead = `<tr style="border-bottom:1px solid var(--pitch-line);"><th style="text-align:left; padding:6px;">Jugador</th>${docNames.map(n=>`<th style="padding:6px;">${n}</th>`).join('')}</tr>`;
+  const rows = activos.map(p => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);" data-row="${p.rowIndex}">
+      <td style="padding:6px; white-space:nowrap;">#${p.numero||'--'} ${p.nombre}</td>
+      ${docNames.map(n=>`<td style="text-align:center; padding:6px;"><input type="checkbox" data-doc="${n}" ${p.documentacion&&p.documentacion[n]?'checked':''}></td>`).join('')}
+    </tr>`).join('');
+  tbl.innerHTML = thead + rows;
+  tbl.querySelectorAll('tr[data-row]').forEach(tr=>{
+    const rowIndex = Number(tr.dataset.row);
+    tr.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.onchange = async () => {
+        await llamar('updatePlayer', { rowIndex, fields: { ['doc:' + cb.dataset.doc]: cb.checked } });
+        await recargarSilencioso();
+      };
+    });
+  });
+}
+ 
+function renderPayTablePresi(){
+  const tbl = document.getElementById('payTablePresi');
+  const payNames = STATE.paymentColumnNames || [];
+  const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
+  const thead = `<tr style="border-bottom:1px solid var(--pitch-line);"><th style="text-align:left; padding:6px;">Jugador</th>${payNames.map(n=>`<th style="padding:6px;">${n}</th>`).join('')}<th style="padding:6px;">Uniforme ($)</th></tr>`;
+  const rows = activos.map(p => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);" data-row="${p.rowIndex}" data-nombre="${p.nombre.replace(/"/g,'&quot;')}">
+      <td style="padding:6px; white-space:nowrap;">#${p.numero||'--'} ${p.nombre}</td>
+      ${payNames.map(n=>`<td style="text-align:center; padding:6px;"><input type="checkbox" data-pay="${n}" ${p.pagos&&p.pagos[n]?'checked':''}></td>`).join('')}
+      <td style="padding:6px;"><input type="number" min="0" data-monto style="width:70px; background:var(--pitch-dark); border:1px solid var(--pitch-line); color:var(--chalk); border-radius:4px; padding:3px 5px;" value="${p.uniformeMonto||0}"> / $${STATE.uniformeCosto}</td>
+    </tr>`).join('');
+  tbl.innerHTML = thead + rows;
+  tbl.querySelectorAll('tr[data-row]').forEach(tr=>{
+    const rowIndex = Number(tr.dataset.row);
+    const nombre = tr.dataset.nombre;
+    tr.querySelectorAll('[data-pay]').forEach(cb=>{
+      cb.onchange = async () => { await llamar('updatePlayer', { rowIndex, fields: { ['doc:' + cb.dataset.pay]: cb.checked } }); await recargarSilencioso(); };
+    });
+    tr.querySelector('[data-monto]').onchange = async (e) => { await llamar('setUniformeMonto', { nombre, monto: Number(e.target.value)||0 }); await recargarSilencioso(); };
+  });
+}
+ 
+// ---------- REDES: publicaciones ----------
+function renderPublicacionesRedes(){
+  document.getElementById('linkDriveRedesBtn').href = STATE.linkDriveRedes || '#';
+  const el = document.getElementById('misPublicaciones');
+  const mias = (STATE.publicaciones||[]).filter(p=>p.creadoPor===miPerfil.nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if (!mias.length){ el.innerHTML = 'Aún no has enviado nada.'; return; }
+  el.innerHTML = mias.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.descripcion||'(sin descripción)'}</div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.fecha} · <span style="color:${p.estado==='Aprobada'?'var(--accent)':(p.estado==='Rechazada'?'var(--red)':'var(--amber)')};">${p.estado}</span></div>
+    </div>`).join('');
+}
+document.getElementById('enviarPublicacionBtn').onclick = async () => {
+  const msg = document.getElementById('publicacionMsg');
+  const descripcion = document.getElementById('pub_descripcion').value;
+  const link = document.getElementById('pub_link').value;
+  if (!descripcion && !link){ msg.textContent = 'Escribe algo o pon un link.'; msg.className = 'msg err'; return; }
+  msg.textContent = 'Enviando...'; msg.className = 'msg';
+  try{
+    await llamar('addPublicacion', { descripcion, link, creadoPor: miPerfil.nombre });
+    msg.textContent = 'Enviado para revisión ✓'; msg.className = 'msg ok';
+    document.getElementById('pub_descripcion').value = '';
+    document.getElementById('pub_link').value = '';
+    await recargarSilencioso();
+    renderPublicacionesRedes();
+  }catch(err){
+    msg.textContent = 'No se pudo enviar: ' + err.message; msg.className = 'msg err';
+  }
+};
+ 
+// ---------- AYUDA: necesidades y hoja de directiva ----------
+function renderNecesidadesList(){
+  const el = document.getElementById('necesidadesList');
+  const pendientes = (STATE.necesidades||[]).filter(n=>n.estado==='Pendiente');
+  if (!pendientes.length){ el.innerHTML = 'Nada pendiente por ahora.'; return; }
+  el.innerHTML = pendientes.map(n => `
+    <div class="evento-row">
+      <div style="font-size:13.5px;">${n.texto}</div>
+      <div style="font-size:12px; color:var(--chalk-dim); margin-bottom:6px;">${n.creadoPor} · ${n.fecha}</div>
+      <a href="#" data-resuelto="${n.rowIndex}" style="color:var(--accent); font-size:12px;">Marcar como resuelto</a>
+    </div>`).join('');
+  el.querySelectorAll('[data-resuelto]').forEach(a=>{
+    a.onclick = async (e) => { e.preventDefault(); await llamar('actualizarNecesidad', {rowIndex:Number(a.dataset.resuelto), estado:'Resuelto'}); await recargarSilencioso(); renderNecesidadesList(); };
+  });
+}
+function renderHojaDirectiva(){
+  const el = document.getElementById('hojaDirectiva');
+  const directiva = (STATE.profes||[]).filter(p=>p.tipo==='Directiva');
+  if (!directiva.length){ el.innerHTML = 'Sin miembros de directiva registrados.'; return; }
+  el.innerHTML = directiva.map(p => `
+    <div class="evento-row">
+      <div style="font-weight:600; font-size:13.5px;">${p.nombre} <span style="color:var(--chalk-dim); font-weight:400;">— ${p.rol||'Directiva'}</span></div>
+      <div style="font-size:12px; color:var(--chalk-dim);">${p.telefono||'—'} ${p.correo?('· '+p.correo):''}</div>
+    </div>`).join('');
+}
 </script>
 </body>
 </html>
+ 
