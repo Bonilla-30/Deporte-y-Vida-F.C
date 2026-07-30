@@ -550,11 +550,12 @@ function entrarAlPanel(){
  
   const esDirectiva = miPerfil.tipo === 'Directiva';
   const funcion = esDirectiva ? detectarFuncion(miPerfil.rol) : null;
+  const actuaComoProfe = !esDirectiva || funcion === 'director'; // director deportivo también hace de profe
  
-  // a Directiva no le mostramos asistencias de alumnos, "avisar falta" ni el planeador de formaciones — solo eventos, más lo de su función
-  document.getElementById('tabAlumnos').style.display = esDirectiva ? 'none' : 'inline-block';
-  document.getElementById('tabFalta').style.display = esDirectiva ? 'none' : 'inline-block';
-  document.getElementById('tabFormacion').style.display = esDirectiva ? 'none' : 'inline-block';
+  // a Directiva (excepto Director Deportivo) no le mostramos asistencias de alumnos, "avisar falta" ni el planeador de formaciones — solo eventos, más lo de su función
+  document.getElementById('tabAlumnos').style.display = actuaComoProfe ? 'inline-block' : 'none';
+  document.getElementById('tabFalta').style.display = actuaComoProfe ? 'inline-block' : 'none';
+  document.getElementById('tabFormacion').style.display = actuaComoProfe ? 'inline-block' : 'none';
   document.getElementById('tabProfes').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
   document.getElementById('tabPresiPublicaciones').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
   document.getElementById('tabPresiNecesidades').style.display = funcion === 'presidente' ? 'inline-block' : 'none';
@@ -566,8 +567,8 @@ function entrarAlPanel(){
  
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const tabInicial = esDirectiva ? 'tabEventos' : 'tabAlumnos';
-  const viewInicial = esDirectiva ? 'eventos' : 'alumnos';
+  const tabInicial = actuaComoProfe ? 'tabAlumnos' : 'tabEventos';
+  const viewInicial = actuaComoProfe ? 'alumnos' : 'eventos';
   document.getElementById(tabInicial).classList.add('active');
   document.getElementById('view-' + viewInicial).classList.add('active');
  
