@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -375,16 +374,19 @@
     <!-- PUBLICACIONES (Redes) -->
     <div class="view" id="view-publicaciones">
       <div class="card">
+        <div class="section-title">Crear una carpeta nueva</div>
+        <p style="font-size:12.5px; color:var(--chalk-dim);">Créala aquí primero; luego ya aparece en la lista para elegirla al subir fotos.</p>
+        <div class="field"><input type="text" id="nueva_carpeta_nombre" placeholder="Ej. Fotos Enero 2027"></div>
+        <button class="btn btn-ghost" id="crearCarpetaBtn" style="width:100%; margin-top:10px;">+ Crear carpeta</button>
+        <div class="msg" id="carpetaMsg"></div>
+      </div>
+      <div class="card">
         <div class="section-title">Subir una foto para publicar</div>
-        <p style="font-size:12.5px; color:var(--chalk-dim);">Se guarda directo en la carpeta de Drive del equipo (academiadeporteyvida@gmail.com), en la subcarpeta que elijas. Queda pendiente de aprobación del presidente.</p>
+        <p style="font-size:12.5px; color:var(--chalk-dim);">Se guarda directo en la carpeta de Drive del equipo. Queda pendiente de aprobación del presidente.</p>
  
         <div class="field" style="margin-top:12px;">
           <label>Subcarpeta</label>
           <select id="pub_subcarpeta"><option value="">Cargando carpetas...</option></select>
-        </div>
-        <div class="field" style="margin-top:10px;">
-          <label>O crea una carpeta nueva (opcional, ignora la de arriba si escribes aquí)</label>
-          <input type="text" id="pub_subcarpeta_nueva" placeholder="Ej. Fotos Enero 2027">
         </div>
         <div class="field" style="margin-top:10px;">
           <label>Descripción</label>
@@ -1164,18 +1166,31 @@ document.getElementById('pub_foto_input').addEventListener('change', async (e) =
   }
 });
  
+document.getElementById('crearCarpetaBtn').onclick = async () => {
+  const msg = document.getElementById('carpetaMsg');
+  const nombre = document.getElementById('nueva_carpeta_nombre').value.trim();
+  if (!nombre){ msg.textContent = 'Escribe un nombre para la carpeta.'; msg.className = 'msg err'; return; }
+  msg.textContent = 'Creando...'; msg.className = 'msg';
+  try{
+    const r = await llamar('crearSubcarpetaRedes', { nombre });
+    msg.textContent = r.yaExistia ? 'Esa carpeta ya existía, ya la puedes elegir.' : 'Carpeta creada ✓'; msg.className = 'msg ok';
+    document.getElementById('nueva_carpeta_nombre').value = '';
+    renderPublicacionesRedes(); // refresca la lista de subcarpetas
+  }catch(err){
+    msg.textContent = 'No se pudo crear: ' + err.message; msg.className = 'msg err';
+  }
+};
+ 
 document.getElementById('enviarPublicacionBtn').onclick = async () => {
   const msg = document.getElementById('publicacionMsg');
   const descripcion = document.getElementById('pub_descripcion').value;
-  const subcarpetaNueva = document.getElementById('pub_subcarpeta_nueva').value.trim();
-  const subcarpeta = subcarpetaNueva || document.getElementById('pub_subcarpeta').value;
+  const subcarpeta = document.getElementById('pub_subcarpeta').value;
   if (!pendingRedesPhotoDataUrl){ msg.textContent = 'Elige una foto primero.'; msg.className = 'msg err'; return; }
   msg.textContent = 'Subiendo a Drive...'; msg.className = 'msg';
   try{
     await llamar('subirFotoRedes', { descripcion, subcarpeta, dataUrl: pendingRedesPhotoDataUrl, creadoPor: miPerfil.nombre });
     msg.textContent = 'Subida ✓ Enviada para revisión del presidente.'; msg.className = 'msg ok';
     document.getElementById('pub_descripcion').value = '';
-    document.getElementById('pub_subcarpeta_nueva').value = '';
     document.getElementById('pub_foto_input').value = '';
     document.getElementById('pub_preview').innerHTML = '';
     pendingRedesPhotoDataUrl = null;
@@ -1236,4 +1251,3 @@ function renderHojaDirectiva(){
 </script>
 </body>
 </html>
- 
