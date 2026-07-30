@@ -365,6 +365,21 @@
       <div class="card">
         <div class="section-title">Jugadores registrados</div>
         <p style="font-size:12px; color:var(--chalk-dim);">Vista de solo lectura — para modificar algo, pídeselo al encargado de Papeles.</p>
+        <div class="row2" style="margin-bottom:12px;">
+          <div class="field"><label>Año de nacimiento</label><select id="presiJFiltroAnio"><option value="">Todos</option></select></div>
+          <div class="field"><label>Posición</label><select id="presiJFiltroPosicion"><option value="">Todas</option></select></div>
+        </div>
+        <div class="row2" style="margin-bottom:12px;">
+          <div class="field"><label>Equipo</label><select id="presiJFiltroEquipo"><option value="">Todos</option></select></div>
+          <div class="field"><label>Ordenar por</label>
+            <select id="presiJOrden">
+              <option value="numero">Número</option>
+              <option value="nombre">Nombre A-Z</option>
+              <option value="asistencia">Asistencia (mayor a menor)</option>
+              <option value="documentacion">Documentación (menos completa primero)</option>
+            </select>
+          </div>
+        </div>
         <div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12px;" id="jugadoresTablePresi"></table></div>
       </div>
     </div>
@@ -1070,31 +1085,67 @@ function renderFaltasPresi(){
     </div>`).join('') : 'Aún ninguna.';
 }
 
+function poblarFiltrosJugadoresPresi(){
+  const activos = STATE.players.filter(p=>!p.baja);
+  const anios = [...new Set(activos.map(p=>String(p.anioNacimiento)).filter(Boolean))].sort();
+  const posiciones = [...new Set(activos.flatMap(getPositionTagsLocal))].sort();
+  const equipos = [...new Set(activos.map(p=>p.equipo).filter(Boolean))].sort();
+  const selAnio = document.getElementById('presiJFiltroAnio');
+  const selPos = document.getElementById('presiJFiltroPosicion');
+  const selEquipo = document.getElementById('presiJFiltroEquipo');
+  const vAnio = selAnio.value, vPos = selPos.value, vEquipo = selEquipo.value;
+  selAnio.innerHTML = '<option value="">Todos</option>' + anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  selPos.innerHTML = '<option value="">Todas</option>' + posiciones.map(p=>`<option value="${p}">${p}</option>`).join('');
+  selEquipo.innerHTML = '<option value="">Todos</option>' + equipos.map(e=>`<option value="${e}">${e}</option>`).join('');
+  selAnio.value = vAnio; selPos.value = vPos; selEquipo.value = vEquipo;
+}
+['presiJFiltroAnio','presiJFiltroPosicion','presiJFiltroEquipo','presiJOrden'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderJugadoresTablePresi);
+});
+
 function renderJugadoresTablePresi(){
+  poblarFiltrosJugadoresPresi();
   const tbl = document.getElementById('jugadoresTablePresi');
   const docNames = STATE.docColumnNames || [];
-  const activos = STATE.players.filter(p=>!p.baja).sort((a,b)=>(a.numero||999)-(b.numero||999));
-  const thead = `<tr style="border-bottom:1px solid var(--pitch-line);">
-    <th style="text-align:left; padding:6px;">Jugador</th>
-    <th style="padding:6px;">Documentación</th>
-    <th style="padding:6px;">Uniforme</th>
-    <th style="padding:6px;">Asistencia</th>
-  </tr>`;
-  const rows = activos.map(p => {
+  const fAnio = document.getElementById('presiJFiltroAnio').value;
+  const fPos = document.getElementById('presiJFiltroPosicion').value;
+  const fEquipo = document.getElementById('presiJFiltroEquipo').value;
+  const orden = document.getElementById('presiJOrden').value;
+
+  let lista = STATE.players.filter(p=>!p.baja);
+  if (fAnio) lista = lista.filter(p => String(p.anioNacimiento) === fAnio);
+  if (fPos) lista = lista.filter(p => getPositionTagsLocal(p).includes(fPos));
+  if (fEquipo) lista = lista.filter(p => p.equipo === fEquipo);
+
+  const calc = p => {
     const docsFilled = docNames.filter(n=>p.documentacion && p.documentacion[n]).length;
     const docsOk = docNames.length && docsFilled === docNames.length;
     const uPct = STATE.uniformeCosto ? Math.min(100, Math.round(((p.uniformeMonto||0)/STATE.uniformeCosto)*100)) : 0;
     const rec = STATE.attendanceRecords[p.nombre];
     const entries = rec ? Object.entries(rec).filter(([fecha]) => !p.fechaRegistro || fecha >= p.fechaRegistro) : [];
     const pct = entries.length ? Math.round(entries.filter(([,v])=>v).length / entries.length * 100) : null;
-    return `
+    return { docsFilled, docsOk, uPct, pct };
+  };
+
+  const withStats = lista.map(p => ({ p, ...calc(p) }));
+  if (orden === 'nombre') withStats.sort((a,b)=>a.p.nombre.localeCompare(b.p.nombre));
+  else if (orden === 'asistencia') withStats.sort((a,b)=>(b.pct??-1)-(a.pct??-1));
+  else if (orden === 'documentacion') withStats.sort((a,b)=>a.docsFilled-b.docsFilled);
+  else withStats.sort((a,b)=>(a.p.numero||999)-(b.p.numero||999));
+
+  const thead = `<tr style="border-bottom:1px solid var(--pitch-line);">
+    <th style="text-align:left; padding:6px;">Jugador</th>
+    <th style="padding:6px;">Documentación</th>
+    <th style="padding:6px;">Uniforme</th>
+    <th style="padding:6px;">Asistencia</th>
+  </tr>`;
+  const rows = withStats.length ? withStats.map(({p, docsFilled, docsOk, uPct, pct}) => `
     <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
       <td style="padding:6px; white-space:nowrap;">#${p.numero||'--'} ${p.nombre}</td>
       <td style="padding:6px; text-align:center; color:${docsOk?'var(--accent)':'var(--chalk-dim)'};">${docsFilled}/${docNames.length}${docsOk?' ✓':''}</td>
       <td style="padding:6px; text-align:center; color:${uPct>=100?'var(--accent)':'var(--chalk-dim)'};">${uPct}%</td>
       <td style="padding:6px; text-align:center; color:${pct!==null?'var(--accent)':'var(--chalk-dim)'};">${pct!==null ? pct+'%' : '—'}</td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('') : `<tr><td colspan="4" style="padding:12px; text-align:center; color:var(--chalk-dim);">Sin jugadores con esos filtros.</td></tr>`;
   tbl.innerHTML = thead + rows;
 }
 
